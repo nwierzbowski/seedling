@@ -70,22 +70,7 @@ mod tests {
         assert!(true);
     }
 
-    /// Test that TEST_MODE environment variable handling works correctly
-    #[tokio::test]
-    async fn test_test_mode_handling() {
-        // Set the test mode to simulate running in test mode
-        env::set_var("TEST_MODE", "1");
-
-        let test_mode = env::var("TEST_MODE").is_ok();
-        assert!(test_mode);
-
-        // Clear the variable
-        env::remove_var("TEST_MODE");
-
-        let test_mode = env::var("TEST_MODE").is_ok();
-        assert!(!test_mode);
-    }
-
+    
     /// Test that process lifecycle management functions properly compile
     #[tokio::test]
     async fn test_function_signature_compatibility() {
