@@ -24,16 +24,11 @@ impl ProcessManager {
 
     /// Starts the llama-swap server.
     pub async fn start_llama_swap(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // Check if TEST_MODE is set to avoid killing processes during testing
-        let test_mode = std::env::var("TEST_MODE").is_ok();
-
-        if !test_mode {
-            // Kill old instances first - but be more specific to avoid killing unrelated processes
-            let _ = Command::new("pkill")
-                .arg("-f")
-                .arg("llama-swap")
-                .status();
-        }
+        // Kill old instances first - but be more specific to avoid killing unrelated processes
+        let _ = Command::new("pkill")
+            .arg("-f")
+            .arg("llama-swap")
+            .status();
 
         // Launch the new instance with specified arguments
         let child = TokioCommand::new("llama-swap")
@@ -54,16 +49,11 @@ impl ProcessManager {
 
     /// Starts the llama-server.
     pub async fn start_llama_server(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // Check if TEST_MODE is set to avoid killing processes during testing
-        let test_mode = std::env::var("TEST_MODE").is_ok();
-
-        if !test_mode {
-            // Kill old instances first - but be more specific to avoid killing unrelated processes
-            let _ = Command::new("pkill")
-                .arg("-f")
-                .arg("llama-server")
-                .status();
-        }
+        // Kill old instances first - but be more specific to avoid killing unrelated processes
+        let _ = Command::new("pkill")
+            .arg("-f")
+            .arg("llama-server")
+            .status();
 
         // Launch the new instance with specified arguments
         let child = TokioCommand::new("llama-server")
