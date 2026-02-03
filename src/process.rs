@@ -24,15 +24,19 @@ impl ProcessManager {
 
     /// Starts the llama-swap server.
     pub async fn start_llama_swap(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // Implementation for starting llama-swap
-        println!("Starting llama-swap server...");
+        // Check if TEST_MODE is set to avoid killing processes during testing
+        let test_mode = std::env::var("TEST_MODE").is_ok();
 
-        // Kill old instances first
-        let _ = Command::new("pkill").arg("-9").arg("llama-server").status();
-        let _ = Command::new("pkill").arg("-9").arg("llama-swap").status();
+        if !test_mode {
+            // Kill old instances first - but be more specific to avoid killing unrelated processes
+            let _ = Command::new("pkill")
+                .arg("-f")
+                .arg("llama-swap")
+                .status();
+        }
 
         // Launch the new instance with specified arguments
-        let child = Command::new("llama-swap")
+        let child = TokioCommand::new("llama-swap")
             .arg("--config")
             .arg("config.yaml")
             .arg("--listen")
@@ -40,20 +44,29 @@ impl ProcessManager {
             .spawn()
             .map_err(|e| format!("Failed to start llama-swap: {}", e))?;
 
+        // Store the process handle for proper cleanup
+        let child_handle = Arc::new(child);
+        self.processes.insert("llama-swap".to_string(), child_handle.clone());
+
+        println!("✅ Started llama-swap server with PID: {}", child_handle.id().unwrap_or(0));
         Ok(())
     }
 
     /// Starts the llama-server.
     pub async fn start_llama_server(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // Implementation for starting llama-server
-        println!("Starting llama-server...");
+        // Check if TEST_MODE is set to avoid killing processes during testing
+        let test_mode = std::env::var("TEST_MODE").is_ok();
 
-        // Kill old instances first
-        let _ = Command::new("pkill").arg("-9").arg("llama-server").status();
-        let _ = Command::new("pkill").arg("-9").arg("llama-swap").status();
+        if !test_mode {
+            // Kill old instances first - but be more specific to avoid killing unrelated processes
+            let _ = Command::new("pkill")
+                .arg("-f")
+                .arg("llama-server")
+                .status();
+        }
 
         // Launch the new instance with specified arguments
-        let child = Command::new("llama-server")
+        let child = TokioCommand::new("llama-server")
             .arg("--listen")
             .arg("0.0.0.0:8080")
             .arg("--model")
@@ -61,18 +74,40 @@ impl ProcessManager {
             .spawn()
             .map_err(|e| format!("Failed to start llama-server: {}", e))?;
 
+        // Store the process handle for proper cleanup
+        let child_handle = Arc::new(child);
+        self.processes.insert("llama-server".to_string(), child_handle.clone());
+
+        println!("✅ Started llama-server with PID: {}", child_handle.id().unwrap_or(0));
         Ok(())
     }
 
     /// Stops all managed processes.
     pub async fn stop_all(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // Implementation for stopping all processes
-        println!("Stopping all AI processes...");
+        println!("🛑 Stopping all AI processes...");
 
-        // Kill all processes
-        let _ = Command::new("pkill").arg("-9").arg("llama-server").status();
-        let _ = Command::new("pkill").arg("-9").arg("llama-swap").status();
+        // For each process we're tracking, try to terminate it gracefully
+        for (name, child) in &self.processes {
+            println!("Terminating {}...", name);
 
+            // Try to terminate the process gracefully using kill() method
+            if let Some(pid) = child.id() {
+                // Use SIGTERM for graceful termination
+                let _ = Command::new("kill")
+                    .arg("-TERM")
+                    .arg(&pid.to_string())
+                    .status();
+
+                // Give it a moment to terminate gracefully
+                tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+            }
+        }
+
+        // Clear the tracked processes map
+        self.processes.clear();
+
+        println!("✅ All AI processes stopped successfully");
         Ok(())
     }
 }
