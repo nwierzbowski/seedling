@@ -4,7 +4,7 @@
 //! operations including GPU configuration, nvidia-smi locks, and system monitoring.
 
 use std::process::Command;
-use std::io::{self, Write};
+use anyhow::{Result, Context};
 
 /// Manages NVIDIA SMI locks for GPU resources.
 pub struct NvSmiLockManager {
@@ -31,6 +31,61 @@ impl NvSmiLockManager {
         // Implementation for releasing nvidia-smi locks
         println!("Releasing NVIDIA SMI lock...");
         Ok(())
+    }
+}
+
+/// GPU guard with safety protocols.
+pub struct GpuGuard;
+
+impl GpuGuard {
+    /// Engages the safety locks for GPU configuration.
+    pub fn engage_safety_locks() -> Result<()> {
+        println!("🛡️  Engaging 4090 Safety Protocols...");
+
+        // 1. Persistence Mode
+        Self::run_nvidia_cmd(&["-pm", "1"])?;
+
+        // 2. Power Limit (300W)
+        Self::run_nvidia_cmd(&["-pl", "300"])?;
+
+        // 3. Lock Clocks (2100MHz)
+        Self::run_nvidia_cmd(&["-lgc", "2100"])?;
+
+        println!("✅ GPU Locked and Loaded.");
+        Ok(())
+    }
+
+    /// Runs an nvidia-smi command with the given arguments.
+    fn run_nvidia_cmd(args: &[&str]) -> Result<()> {
+        let status = Command::new("sudo")
+            .arg("nvidia-smi")
+            .args(args)
+            .status()
+            .context("Failed to execute nvidia-smi")?;
+
+        if !status.success() {
+            anyhow::bail!("nvidia-smi command failed: {:?}", args);
+        }
+        Ok(())
+    }
+
+    /// Checks if the GPU is idle (under 5% utilization).
+    pub fn is_gpu_idle() -> bool {
+        // Use nvidia-smi query to check utilization
+        let output = Command::new("nvidia-smi")
+            .args(&["--query-gpu=utilization.gpu", "--format=csv,noheader,nounits"])
+            .output();
+
+        match output {
+            Ok(output) => {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                if let Ok(util) = stdout.trim().parse::<u32>() {
+                    return util < 5; // Idle if under 5% usage
+                }
+                false
+            }
+            Err(_) => false, // Return false if command fails
+        }
     }
 }
 

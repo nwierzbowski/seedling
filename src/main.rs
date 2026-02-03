@@ -9,6 +9,7 @@ mod tmux;
 
 use std::error::Error;
 use tokio::signal;
+use anyhow;
 
 /// Main application struct that orchestrates all modules.
 pub struct SeedlingApp {
@@ -53,11 +54,9 @@ impl SeedlingApp {
     async fn initialize_hardware(&mut self) -> Result<(), Box<dyn Error>> {
         println!("Initializing hardware components...");
 
-        // Acquire locks and configure GPU settings
-        self.hardware_manager.acquire_lock().await?;
-
-        // Setup NVIDIA GPU settings
-        self.hardware_manager.setup_gpu().await?;
+        // Engage safety locks and configure GPU settings
+        hardware::GpuGuard::engage_safety_locks()
+            .map_err(|e| anyhow::anyhow!("Failed to engage safety locks: {}", e))?;
 
         Ok(())
     }
