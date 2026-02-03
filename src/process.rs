@@ -1,7 +1,7 @@
-//! Process management module for handling llama-swap and llama-server.
+//! Process management module for handling llama-swap server.
 //!
-//! This module manages the lifecycle of AI-related processes ensuring they
-//! are properly started, monitored, and terminated when the application dies.
+//! This module manages the lifecycle of the llama-swap process ensuring it
+//! is properly started, monitored, and terminated when the application dies.
 
 use std::process::Command;
 use tokio::process::Command as TokioCommand;
@@ -22,7 +22,7 @@ pub enum ProcessStatus {
     Unknown,
 }
 
-/// Manages AI processes like llama-swap and llama-server.
+/// Manages AI processes like llama-swap.
 pub struct ProcessManager {
     /// Map of process names to their handles
     processes: HashMap<String, tokio::process::Child>,
@@ -50,7 +50,7 @@ impl ProcessManager {
         // Launch the new instance with specified arguments
         let child = TokioCommand::new("/home/nwier/.local/bin/llama-swap")
             .arg("--config")
-            .arg("config.yaml")
+            .arg("/home/nwier/models/llama-swap-config.yaml")
             .arg("--listen")
             .arg("0.0.0.0:8081")
             .spawn()
@@ -64,28 +64,6 @@ impl ProcessManager {
         self.restart_counts.insert("llama-swap".to_string(), 0);
 
         println!("✅ Started llama-swap server with PID: {}", pid);
-        Ok(())
-    }
-
-    /// Starts the llama-server.
-    pub async fn start_llama_server(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // Launch the new instance with specified arguments
-        let child = TokioCommand::new("/home/nwier/.local/bin/llama-server")
-            .arg("--listen")
-            .arg("0.0.0.0:8080")
-            .arg("--model")
-            .arg("models/llama-2-7b-chat.Q4_K_M.gguf")
-            .spawn()
-            .map_err(|e| format!("Failed to start llama-server: {}", e))?;
-
-        let pid = child.id().unwrap_or(0);
-
-        // Store the process handle for proper cleanup
-        self.processes.insert("llama-server".to_string(), child);
-        self.process_status.insert("llama-server".to_string(), ProcessStatus::Running);
-        self.restart_counts.insert("llama-server".to_string(), 0);
-
-        println!("✅ Started llama-server with PID: {}", pid);
         Ok(())
     }
 

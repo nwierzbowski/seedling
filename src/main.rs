@@ -62,15 +62,12 @@ impl SeedlingApp {
         Ok(())
     }
 
-    /// Starts the AI processes (llama-swap, llama-server).
+    /// Starts the AI processes (llama-swap).
     async fn start_processes(&mut self) -> Result<(), Box<dyn Error>> {
         println!("⚙️ Starting AI processes...");
 
         // Start llama-swap server
         self.process_manager.start_llama_swap().await?;
-
-        // Start llama-server
-        self.process_manager.start_llama_server().await?;
 
         println!("✅ AI processes started successfully");
         Ok(())
