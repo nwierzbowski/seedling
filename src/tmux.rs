@@ -33,7 +33,23 @@ impl TmuxManager {
     pub async fn setup_layout(&self) -> Result<(), Box<dyn std::error::Error>> {
         println!("🖥️  Constructing War Room Layout...");
 
-        // Kill existing session if it exists
+        // Check if session already exists
+        let session_exists = Command::new("tmux")
+            .args(&["has-session", "-t", &self.session_name])
+            .output()
+            .map(|output| output.status.success())
+            .unwrap_or(false);
+
+        if session_exists {
+            println!("🔄 Session '{}' already exists, attaching to it...", self.session_name);
+            // Attach to existing session
+            let _ = Command::new("tmux")
+                .args(&["attach-session", "-t", &self.session_name])
+                .status();
+            return Ok(());
+        }
+
+        // Kill existing session if it exists (for cleanup)
         let _ = Command::new("tmux")
             .args(&["kill-session", "-t", &self.session_name])
             .status();
@@ -41,6 +57,10 @@ impl TmuxManager {
         // Create new session with detached mode (no-attach)
         let _ = Command::new("tmux")
             .args(&["new-session", "-d", "-s", &self.session_name])
+            .status();
+
+        let _ = Command::new("tmux")
+            .args(&["set", "-g", "mouse", "on"])
             .status();
 
         // Split right to create Pane 1 (Tester)
