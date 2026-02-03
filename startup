@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# --- 1. 4090 ELECTRICAL SAFETY ---
+echo "Engaging 4090 Safety Protocol..."
+
+sudo nvidia-smi -pm 1                # Persistence Mode
+sudo nvidia-smi -pl 300               # 300W Power Limit
+sudo nvidia-smi -lgc 2100             # Lock Clock to 2100MHz (Prevents end-of-job crashes)
+
+# --- 2. START BACKEND ---
+echo "Starting Llama-Swap..."
+# Kill any old instances first
+pkill -9 llama-server
+pkill -9 llama-swap
+# Start llama-swap in the background
+llama-swap --config ~/models/llama-swap-config.yaml --listen 0.0.0.0:8081 &
+sleep 5 # Give the server a moment to warm up
+
+# --- 3. CONFIGURE TMUX ---
+SESSION="ai_factory"
+# export ANTHROPIC_BASE_URL="http://localhost:8081"
+tmux kill-session -t $SESSION 2>/dev/null # Kill old session if it exists
+# Create session and split panes
+tmux new-session -d -s $SESSION
+
+# Enable Mouse Mode (Allows you to CLICK panes to switch focus)
+tmux set -g mouse on
+
+tmux split-window -h
+tmux select-pane -t 1
+tmux split-window -v
+
+# Launch the agents
+tmux send-keys -t 0 "claude --model engineer" C-m
+tmux send-keys -t 1 "claude --model tester" C-m
+tmux send-keys -t 2 "claude --model auditor" C-m
+
+# Select the Engineer pane as default
+tmux select-pane -t 0
+tmux attach-session -t $SESSION
