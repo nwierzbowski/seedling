@@ -24,12 +24,6 @@ impl ProcessManager {
 
     /// Starts the llama-swap server.
     pub async fn start_llama_swap(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // Kill old instances first - but be more specific to avoid killing unrelated processes
-        let _ = Command::new("pkill")
-            .arg("-f")
-            .arg("llama-swap")
-            .status();
-
         // Launch the new instance with specified arguments
         let child = TokioCommand::new("llama-swap")
             .arg("--config")
@@ -49,12 +43,6 @@ impl ProcessManager {
 
     /// Starts the llama-server.
     pub async fn start_llama_server(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // Kill old instances first - but be more specific to avoid killing unrelated processes
-        let _ = Command::new("pkill")
-            .arg("-f")
-            .arg("llama-server")
-            .status();
-
         // Launch the new instance with specified arguments
         let child = TokioCommand::new("llama-server")
             .arg("--listen")
