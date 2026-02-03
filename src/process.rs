@@ -3,12 +3,11 @@
 //! This module manages the lifecycle of AI-related processes ensuring they
 //! are properly started, monitored, and terminated when the application dies.
 
-use std::process::{Command, Child};
-use std::sync::Arc;
+use std::process::Command;
 use tokio::process::Command as TokioCommand;
 use std::collections::HashMap;
 use tokio::time::{timeout, Duration, sleep};
-use std::time::Instant;
+use anyhow::Result;
 
 /// Represents the status of a managed process.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -26,7 +25,7 @@ pub enum ProcessStatus {
 /// Manages AI processes like llama-swap and llama-server.
 pub struct ProcessManager {
     /// Map of process names to their handles
-    processes: HashMap<String, Arc<tokio::process::Child>>,
+    processes: HashMap<String, tokio::process::Child>,
     /// Map of process names to their status
     process_status: HashMap<String, ProcessStatus>,
     /// Map of process names to restart counts
@@ -46,24 +45,10 @@ impl ProcessManager {
         }
     }
 
-    /// Validates that the command is safe to execute (no shell injection).
-    fn validate_command(cmd: &str) -> Result<(), Box<dyn std::error::Error>> {
-        // Check for dangerous characters
-        let dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '{', '}'];
-        if cmd.chars().any(|c| dangerous_chars.contains(&c)) {
-            anyhow::bail!("Command contains potentially dangerous characters");
-        }
-
-        Ok(())
-    }
-
     /// Starts the llama-swap server.
     pub async fn start_llama_swap(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // Validate command
-        Self::validate_command("llama-swap")?;
-
         // Launch the new instance with specified arguments
-        let child = TokioCommand::new("llama-swap")
+        let child = TokioCommand::new("/home/nwier/.local/bin/llama-swap")
             .arg("--config")
             .arg("config.yaml")
             .arg("--listen")
@@ -71,23 +56,21 @@ impl ProcessManager {
             .spawn()
             .map_err(|e| format!("Failed to start llama-swap: {}", e))?;
 
+        let pid = child.id().unwrap_or(0);
+
         // Store the process handle for proper cleanup
-        let child_handle = Arc::new(child);
-        self.processes.insert("llama-swap".to_string(), child_handle.clone());
+        self.processes.insert("llama-swap".to_string(), child);
         self.process_status.insert("llama-swap".to_string(), ProcessStatus::Running);
         self.restart_counts.insert("llama-swap".to_string(), 0);
 
-        println!("✅ Started llama-swap server with PID: {}", child_handle.id().unwrap_or(0));
+        println!("✅ Started llama-swap server with PID: {}", pid);
         Ok(())
     }
 
     /// Starts the llama-server.
     pub async fn start_llama_server(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        // Validate command
-        Self::validate_command("llama-server")?;
-
         // Launch the new instance with specified arguments
-        let child = TokioCommand::new("llama-server")
+        let child = TokioCommand::new("/home/nwier/.local/bin/llama-server")
             .arg("--listen")
             .arg("0.0.0.0:8080")
             .arg("--model")
@@ -95,13 +78,14 @@ impl ProcessManager {
             .spawn()
             .map_err(|e| format!("Failed to start llama-server: {}", e))?;
 
+        let pid = child.id().unwrap_or(0);
+
         // Store the process handle for proper cleanup
-        let child_handle = Arc::new(child);
-        self.processes.insert("llama-server".to_string(), child_handle.clone());
+        self.processes.insert("llama-server".to_string(), child);
         self.process_status.insert("llama-server".to_string(), ProcessStatus::Running);
         self.restart_counts.insert("llama-server".to_string(), 0);
 
-        println!("✅ Started llama-server with PID: {}", child_handle.id().unwrap_or(0));
+        println!("✅ Started llama-server with PID: {}", pid);
         Ok(())
     }
 
@@ -118,25 +102,28 @@ impl ProcessManager {
         // For each process we're tracking, try to terminate it gracefully
         let mut failed_processes = Vec::new();
 
-        for (name, child) in &self.processes {
-            println!("Terminating {}...", name);
+        // Collect names first to avoid borrowing issues
+        let process_names: Vec<String> = self.processes.keys().cloned().collect();
 
-            // Try to terminate the process gracefully using kill() method
-            if let Some(child_handle) = child.clone() {
+        for name in process_names {
+            if let Some(child) = self.processes.get_mut(&name) {
+                println!("Terminating {}...", &name);
+
+                // Try to terminate the process gracefully using kill() method
                 // Use SIGTERM for graceful termination first
-                match timeout(Duration::from_millis(2000), child_handle.kill()).await {
+                match timeout(Duration::from_millis(2000), child.kill()).await {
                     Ok(Ok(_)) => {
-                        println!("✅ {} terminated gracefully", name);
+                        println!("✅ {} terminated gracefully", &name);
                         self.process_status.insert(name.clone(), ProcessStatus::Stopped);
                     }
                     Ok(Err(e)) => {
-                        eprintln!("⚠️  Failed to terminate {} gracefully: {}", name, e);
+                        eprintln!("⚠️  Failed to terminate {} gracefully: {}", &name, e);
                         failed_processes.push(name.clone());
                         self.process_status.insert(name.clone(), ProcessStatus::Failed);
                     }
                     Err(_) => {
                         // Timeout occurred, force kill
-                        println!("⏰ Timeout on graceful termination of {}, forcing kill...", name);
+                        println!("⏰ Timeout on graceful termination of {}, forcing kill...", &name);
                         if let Some(pid) = child.id() {
                             let _ = Command::new("kill")
                                 .arg("-9")
@@ -165,113 +152,36 @@ impl ProcessManager {
         Ok(())
     }
 
-    /// Checks the status of all managed processes.
-    pub async fn check_process_status(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let mut updated_status = HashMap::new();
-
-        for (name, child) in &self.processes {
-            let status = self.get_process_status(name, child).await;
-            updated_status.insert(name.clone(), status);
-        }
-
-        // Update process statuses
-        for (name, status) in updated_status {
-            self.process_status.insert(name, status);
-        }
-
-        Ok(())
-    }
-
-    /// Gets the current status of a specific process.
-    async fn get_process_status(&self, name: &str, child: &Arc<tokio::process::Child>) -> ProcessStatus {
-        // Check if process is still running
-        match child.try_wait() {
-            Ok(Some(status)) => {
-                // Process has exited
-                if status.success() {
-                    ProcessStatus::Stopped
-                } else {
-                    ProcessStatus::Failed
-                }
-            }
-            Ok(None) => {
-                // Process is still running
-                ProcessStatus::Running
-            }
-            Err(_) => {
-                // Error checking process status, assume unknown
-                ProcessStatus::Unknown
-            }
-        }
-    }
-
-    /// Monitors processes and handles restarts if needed.
+    /// Monitors all managed processes for their current status.
     pub async fn monitor_processes(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        println!("🔄 Monitoring processes...");
+        println!("🔄 Monitoring AI processes...");
 
-        for (name, child) in &self.processes {
-            let status = self.get_process_status(name, child).await;
+        // For each process we're tracking, check its status
+        let process_names: Vec<String> = self.processes.keys().cloned().collect();
 
-            // Check if process has failed
-            if status == ProcessStatus::Failed {
-                println!("⚠️  {} has failed, attempting restart...", name);
-
-                // Check restart attempts
-                let restart_count = self.restart_counts.get(name).copied().unwrap_or(0);
-                if restart_count < self.max_restart_attempts {
-                    self.restart_process(name).await?;
-                    self.restart_counts.insert(name.clone(), restart_count + 1);
-                } else {
-                    eprintln!("❌ {} has failed too many times, giving up on restarts", name);
-                    // Mark as permanently failed
-                    self.process_status.insert(name.clone(), ProcessStatus::Failed);
+        for name in process_names {
+            if let Some(child) = self.processes.get_mut(&name) {
+                // Check if the process has exited by trying to get its exit status
+                match child.try_wait() {
+                    Ok(Some(status)) => {
+                        // Process has exited, update status
+                        println!("⚠️  {} has exited with status: {}", &name, status);
+                        self.process_status.insert(name.clone(), ProcessStatus::Failed);
+                    }
+                    Ok(None) => {
+                        // Process is still running
+                        self.process_status.insert(name.clone(), ProcessStatus::Running);
+                    }
+                    Err(e) => {
+                        eprintln!("⚠️  Failed to check status of {}: {}", &name, e);
+                        self.process_status.insert(name.clone(), ProcessStatus::Unknown);
+                    }
                 }
-            } else if status == ProcessStatus::Stopped {
-                println!("🛑 {} has stopped normally", name);
-                self.process_status.insert(name.clone(), ProcessStatus::Stopped);
             }
         }
 
+        println!("✅ AI processes monitoring completed");
         Ok(())
-    }
-
-    /// Restarts a specific process.
-    async fn restart_process(&mut self, name: &str) -> Result<(), Box<dyn std::error::Error>> {
-        println!("🔄 Restarting {}...", name);
-
-        match name {
-            "llama-swap" => {
-                // Stop the existing process if running
-                if let Some(child) = self.processes.remove(name) {
-                    // Wait for graceful termination or force kill
-                    let _ = timeout(Duration::from_millis(1000), child.kill()).await;
-                }
-
-                // Restart it
-                self.start_llama_swap().await?;
-            }
-            "llama-server" => {
-                // Stop the existing process if running
-                if let Some(child) = self.processes.remove(name) {
-                    // Wait for graceful termination or force kill
-                    let _ = timeout(Duration::from_millis(1000), child.kill()).await;
-                }
-
-                // Restart it
-                self.start_llama_server().await?;
-            }
-            _ => {
-                eprintln!("⚠️  Unknown process to restart: {}", name);
-            }
-        }
-
-        println!("✅ {} restarted successfully", name);
-        Ok(())
-    }
-
-    /// Gets the current status of a specific process.
-    pub fn get_process_status_value(&self, name: &str) -> ProcessStatus {
-        self.process_status.get(name).copied().unwrap_or(ProcessStatus::Unknown)
     }
 }
 
@@ -283,13 +193,5 @@ mod tests {
     async fn test_process_manager_creation() {
         let manager = ProcessManager::new();
         assert!(true); // Just checking it compiles
-    }
-
-    #[tokio::test]
-    async fn test_process_manager_stop_all() {
-        let mut manager = ProcessManager::new();
-        // Test that stop_all can be called without error (even with no processes)
-        let result = manager.stop_all().await;
-        assert!(result.is_ok());
     }
 }

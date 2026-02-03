@@ -9,7 +9,7 @@
 //! - Pane 2 (Auditor): Monitoring and auditing capabilities
 
 use std::process::Command;
-use std::io::{self, Write};
+use std::io::Write;
 
 /// Manages tmux sessions and pane layouts.
 pub struct TmuxManager {

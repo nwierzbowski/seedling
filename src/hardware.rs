@@ -4,7 +4,7 @@
 //! operations including GPU configuration, nvidia-smi locks, and system monitoring.
 
 use std::process::Command;
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 
 /// Manages NVIDIA SMI locks for GPU resources.
 pub struct NvSmiLockManager {
@@ -57,7 +57,7 @@ impl NvSmiLockManager {
     }
 
     /// Acquires an NVIDIA SMI lock for GPU access.
-    pub async fn acquire_lock(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn acquire_lock(&mut self) -> anyhow::Result<()> {
         // Validate nvidia-smi exists and is executable
         Self::validate_nvidia_smi()?;
 
@@ -91,7 +91,7 @@ impl NvSmiLockManager {
     }
 
     /// Releases an NVIDIA SMI lock.
-    pub async fn release_lock(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn release_lock(&mut self) -> anyhow::Result<()> {
         // Only attempt to release if we have a lock
         if !self.lock_acquired {
             println!("No lock to release - no GPU lock was acquired");
@@ -291,7 +291,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_nv_smi_lock_manager_release_lock() {
-        let manager = NvSmiLockManager::new();
+        let mut manager = NvSmiLockManager::new();
         // Test that release method can be called without errors (even if no lock was acquired)
         let result = manager.release_lock().await;
         assert!(result.is_ok()); // Should not error even if no lock
