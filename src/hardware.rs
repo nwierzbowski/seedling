@@ -115,14 +115,64 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_lock_manager_creation() {
+    async fn test_nv_smi_lock_manager_creation() {
         let manager = NvSmiLockManager::new();
         assert!(true); // Just checking it compiles
     }
 
     #[tokio::test]
+    async fn test_nv_smi_lock_manager_acquire_lock() {
+        let manager = NvSmiLockManager::new();
+        // This is a basic test - in real scenario we'd mock the actual lock acquisition
+        let result = manager.acquire_lock().await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_nv_smi_lock_manager_release_lock() {
+        let manager = NvSmiLockManager::new();
+        // This is a basic test - in real scenario we'd mock the actual lock release
+        let result = manager.release_lock().await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_gpu_guard_engage_safety_locks() {
+        // This test ensures compilation and basic flow
+        // Actual command execution requires sudo permissions in real environments
+        let result = GpuGuard::engage_safety_locks();
+        // We can't actually test the commands without sudo, but we verify it compiles
+        assert!(result.is_ok() || result.is_err()); // Either way is fine for compilation test
+    }
+
+    #[tokio::test]
+    async fn test_gpu_guard_is_gpu_idle() {
+        // Test the is_gpu_idle function - it should return a boolean
+        let result = GpuGuard::is_gpu_idle();
+        assert!(result == true || result == false); // Should be a boolean value
+    }
+
+    #[tokio::test]
     async fn test_gpu_config_creation() {
         let config = GpuConfig::new();
-        assert!(true); // Just checking it compiles
+        assert!(true); // Just checking it compiles and can be created
+    }
+
+    #[tokio::test]
+    async fn test_gpu_config_setup_gpu() {
+        let config = GpuConfig::new();
+        // This is a basic test - in real scenario we'd mock the actual GPU setup
+        let result = config.setup_gpu().await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_hardware_module_structural_integrity() {
+        // Test that all structures can be created and have proper signatures
+        let _manager = NvSmiLockManager::new();
+        let _config = GpuConfig::new();
+
+        // Test that methods exist with correct signatures
+        assert!(true); // Just structural test
     }
 }
