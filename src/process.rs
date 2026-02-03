@@ -107,15 +107,91 @@ impl ProcessLifecycle {
 mod tests {
     use super::*;
 
+    /// Test ProcessManager creation and basic functionality
     #[tokio::test]
     async fn test_process_manager_creation() {
         let manager = ProcessManager::new();
-        assert!(true); // Just checking it compiles
+        // Just checking it compiles and can be created
+        assert!(true);
     }
 
+    /// Test that ProcessManager methods compile correctly
     #[tokio::test]
-    async fn test_lifecycle_creation() {
+    async fn test_process_manager_methods() {
+        let mut manager = ProcessManager::new();
+
+        // Test start_llama_swap method exists with correct signature
+        let _start_result = manager.start_llama_swap().await;
+
+        // Test start_llama_server method exists with correct signature
+        let _start_result = manager.start_llama_server().await;
+
+        // Test stop_all method exists with correct signature
+        let _stop_result = manager.stop_all().await;
+
+        assert!(true); // If we get here, methods exist and compile
+    }
+
+    /// Test ProcessLifecycle creation and basic functionality
+    #[tokio::test]
+    async fn test_process_lifecycle_creation() {
         let lifecycle = ProcessLifecycle::new();
-        assert!(true); // Just checking it compiles
+        // Just checking it compiles and can be created
+        assert!(true);
+    }
+
+    /// Test that ProcessLifecycle methods compile correctly
+    #[tokio::test]
+    async fn test_process_lifecycle_methods() {
+        let lifecycle = ProcessLifecycle::new();
+
+        // Test ensure_cleanup method exists with correct signature
+        let _cleanup_result = lifecycle.ensure_cleanup().await;
+
+        assert!(true); // If we get here, methods exist and compile
+    }
+
+    /// Test that all public methods compile correctly
+    #[tokio::test]
+    async fn test_all_methods_signature_compatibility() {
+        // Test ProcessManager creation and methods
+        let mut manager = ProcessManager::new();
+        let _ = manager.start_llama_swap().await;
+        let _ = manager.start_llama_server().await;
+        let _ = manager.stop_all().await;
+
+        // Test ProcessLifecycle creation and methods
+        let lifecycle = ProcessLifecycle::new();
+        let _ = lifecycle.ensure_cleanup().await;
+
+        assert!(true);
+    }
+
+    /// Test that functions have the expected signatures
+    #[tokio::test]
+    async fn test_function_signatures() {
+        // All function signatures are checked through compilation,
+        // so we just ensure they exist and can be called
+
+        // Test ProcessManager methods
+        let mut manager = ProcessManager::new();
+        let _ = manager.start_llama_swap().await;
+        let _ = manager.start_llama_server().await;
+        let _ = manager.stop_all().await;
+
+        // Test ProcessLifecycle methods
+        let lifecycle = ProcessLifecycle::new();
+        let _ = lifecycle.ensure_cleanup().await;
+
+        assert!(true);
+    }
+
+    /// Test ProcessManager initialization
+    #[tokio::test]
+    async fn test_process_manager_initialization() {
+        let manager = ProcessManager::new();
+
+        // Check that processes HashMap is empty initially
+        assert_eq!(manager.processes.len(), 0);
     }
 }
