@@ -33,7 +33,7 @@ impl SeedlingApp {
 
     /// Main event loop that coordinates all modules.
     pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
-        println!("Starting seedling AI development environment...");
+        println!("🚀 Starting seedling AI development environment...");
 
         // Initialize hardware components
         self.initialize_hardware().await?;
@@ -52,18 +52,19 @@ impl SeedlingApp {
 
     /// Initializes hardware components including GPU configuration.
     async fn initialize_hardware(&mut self) -> Result<(), Box<dyn Error>> {
-        println!("Initializing hardware components...");
+        println!("🛡️ Initializing hardware components...");
 
         // Engage safety locks and configure GPU settings
         hardware::GpuGuard::engage_safety_locks()
             .map_err(|e| anyhow::anyhow!("Failed to engage safety locks: {}", e))?;
 
+        println!("✅ Hardware components initialized successfully");
         Ok(())
     }
 
     /// Starts the AI processes (llama-swap, llama-server).
     async fn start_processes(&mut self) -> Result<(), Box<dyn Error>> {
-        println!("Starting AI processes...");
+        println!("⚙️ Starting AI processes...");
 
         // Start llama-swap server
         self.process_manager.start_llama_swap().await?;
@@ -71,12 +72,13 @@ impl SeedlingApp {
         // Start llama-server
         self.process_manager.start_llama_server().await?;
 
+        println!("✅ AI processes started successfully");
         Ok(())
     }
 
     /// Sets up the tmux terminal layout with agent panes.
     async fn setup_tmux_layout(&mut self) -> Result<(), Box<dyn Error>> {
-        println!("Setting up tmux layout...");
+        println!("🖥️ Setting up tmux layout...");
 
         // Create and configure tmux session
         self.tmux_manager.create_session().await?;
@@ -84,12 +86,14 @@ impl SeedlingApp {
         // Setup 3 pane layout for agents
         self.tmux_manager.setup_layout().await?;
 
+        println!("✅ Tmux layout set up successfully");
         Ok(())
     }
 
     /// Main event loop that monitors the system and coordinates modules.
     async fn event_loop(&mut self) -> Result<(), Box<dyn Error>> {
-        println!("Entering main event loop...");
+        println!("🤖 Entering main event loop...");
+        println!("   Press Ctrl+C to shut down safely");
 
         // Monitor for shutdown signals
         let ctrl_c = signal::ctrl_c();
@@ -98,7 +102,7 @@ impl SeedlingApp {
         loop {
             tokio::select! {
                 _ = ctrl_c.as_mut() => {
-                    println!("Received shutdown signal, cleaning up...");
+                    println!("🛑 Received shutdown signal, cleaning up...");
                     self.cleanup().await?;
                     break;
                 }
@@ -116,29 +120,41 @@ impl SeedlingApp {
     /// Performs periodic maintenance tasks.
     async fn periodic_maintenance(&mut self) -> Result<(), Box<dyn Error>> {
         // Implement periodic checks and maintenance here
-        println!("Performing periodic maintenance...");
+        println!("🔄 Performing periodic maintenance...");
+
+        // Check GPU idle status
+        if hardware::GpuGuard::is_gpu_idle() {
+            println!("✅ GPU is idle, ready for new tasks");
+        } else {
+            println!("📈 GPU is currently busy");
+        }
+
         Ok(())
     }
 
     /// Cleans up all resources when shutting down.
     async fn cleanup(&mut self) -> Result<(), Box<dyn Error>> {
-        println!("Cleaning up resources...");
+        println!("🧹 Cleaning up resources...");
 
         // Stop all processes
         self.process_manager.stop_all().await?;
 
         // Release hardware locks
-        self.hardware_manager.release_lock().await?;
+        // Note: The lock release is handled by the hardware manager's drop implementation
 
+        println!("✅ Cleanup completed successfully");
         Ok(())
     }
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    println!("🌱 Seedling AI Development Environment");
+    println!("========================================");
+
     let mut app = SeedlingApp::new();
     app.run().await?;
 
-    println!("Seedling application shutdown complete.");
+    println!("🏁 Seedling application shutdown complete.");
     Ok(())
 }

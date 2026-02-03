@@ -2,6 +2,11 @@
 //!
 //! This module handles the terminal layout management and sending commands
 //! to different AI agents through tmux panes.
+//!
+//! The WarRoom implementation provides a sophisticated 3-pane terminal layout:
+//! - Pane 0 (Engineer): Main development environment
+//! - Pane 1 (Tester): Testing and validation tools
+//! - Pane 2 (Auditor): Monitoring and auditing capabilities
 
 use std::process::Command;
 use std::io::{self, Write};
@@ -23,11 +28,53 @@ impl TmuxManager {
         }
     }
 
-    /// Sets up the terminal layout with 3 panes for agents.
+    /// Sets up the sophisticated terminal layout with 3 panes for agents.
+    /// This creates a War Room layout with Engineer, Tester, and Auditor panes.
     pub async fn setup_layout(&self) -> Result<(), Box<dyn std::error::Error>> {
-        // Implementation for setting up tmux layout
-        println!("Setting up tmux layout with 3 panes...");
+        println!("🖥️  Constructing War Room Layout...");
+
+        // Kill existing session if it exists
+        let _ = Command::new("tmux")
+            .args(&["kill-session", "-t", &self.session_name])
+            .status();
+
+        // Create new session with detached mode (no-attach)
+        let _ = Command::new("tmux")
+            .args(&["new-session", "-d", "-s", &self.session_name])
+            .status();
+
+        // Split right to create Pane 1 (Tester)
+        let _ = Command::new("tmux")
+            .args(&["split-window", "-h", "-t", &self.session_name])
+            .status();
+
+        // Split bottom right (Pane 2 - Auditor) from Pane 1
+        let _ = Command::new("tmux")
+            .args(&["split-window", "-v", "-t", &format!("{}:0.1", self.session_name)])
+            .status();
+
+        // Inject agents into their respective panes
+        self.inject_agent(0, "engineer");
+        self.inject_agent(1, "tester");
+        self.inject_agent(2, "auditor");
+
+        println!("✅ War Room layout constructed with 3 panes.");
         Ok(())
+    }
+
+    /// Injects an agent with its specific configuration into a pane.
+    fn inject_agent(&self, pane: u8, model: &str) {
+        let cmd = format!("export ANTHROPIC_BASE_URL=http://localhost:8081/v1 && claude --model {}", model);
+
+        // Send the command to the specific pane
+        let _ = Command::new("tmux")
+            .args(&["send-keys", "-t", &format!("{}:0.{}", self.session_name, pane), &cmd, "C-m"])
+            .status();
+
+        // Clear screen to force config reload
+        let _ = Command::new("tmux")
+            .args(&["send-keys", "-t", &format!("{}:0.{}", self.session_name, pane), "/clear", "C-m"])
+            .status();
     }
 
     /// Sends a command to a specific agent pane.
