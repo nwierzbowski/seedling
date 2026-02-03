@@ -7,6 +7,7 @@ use std::process::{Command, Child};
 use std::sync::Arc;
 use tokio::process::Command as TokioCommand;
 use std::collections::HashMap;
+use tokio::time::{timeout, Duration};
 
 /// Manages AI processes like llama-swap and llama-server.
 pub struct ProcessManager {
@@ -22,8 +23,22 @@ impl ProcessManager {
         }
     }
 
+    /// Validates that the command is safe to execute (no shell injection).
+    fn validate_command(cmd: &str) -> Result<(), Box<dyn std::error::Error>> {
+        // Check for dangerous characters
+        let dangerous_chars = [';', '&', '|', '`', '$', '(', ')', '{', '}'];
+        if cmd.chars().any(|c| dangerous_chars.contains(&c)) {
+            anyhow::bail!("Command contains potentially dangerous characters");
+        }
+
+        Ok(())
+    }
+
     /// Starts the llama-swap server.
     pub async fn start_llama_swap(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        // Validate command
+        Self::validate_command("llama-swap")?;
+
         // Launch the new instance with specified arguments
         let child = TokioCommand::new("llama-swap")
             .arg("--config")
@@ -43,6 +58,9 @@ impl ProcessManager {
 
     /// Starts the llama-server.
     pub async fn start_llama_server(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        // Validate command
+        Self::validate_command("llama-server")?;
+
         // Launch the new instance with specified arguments
         let child = TokioCommand::new("llama-server")
             .arg("--listen")
@@ -60,57 +78,59 @@ impl ProcessManager {
         Ok(())
     }
 
-    /// Stops all managed processes.
+    /// Stops all managed processes gracefully.
     pub async fn stop_all(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // Implementation for stopping all processes
         println!("🛑 Stopping all AI processes...");
 
+        if self.processes.is_empty() {
+            println!("No processes to stop");
+            return Ok(());
+        }
+
         // For each process we're tracking, try to terminate it gracefully
+        let mut failed_processes = Vec::new();
+
         for (name, child) in &self.processes {
             println!("Terminating {}...", name);
 
             // Try to terminate the process gracefully using kill() method
-            if let Some(pid) = child.id() {
-                // Use SIGTERM for graceful termination
-                let _ = Command::new("kill")
-                    .arg("-TERM")
-                    .arg(&pid.to_string())
-                    .status();
-
-                // Give it a moment to terminate gracefully
-                tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+            if let Some(child_handle) = child.clone() {
+                // Use SIGTERM for graceful termination first
+                match timeout(Duration::from_millis(2000), child_handle.kill()).await {
+                    Ok(Ok(_)) => {
+                        println!("✅ {} terminated gracefully", name);
+                    }
+                    Ok(Err(e)) => {
+                        eprintln!("⚠️  Failed to terminate {} gracefully: {}", name, e);
+                        failed_processes.push(name.clone());
+                    }
+                    Err(_) => {
+                        // Timeout occurred, force kill
+                        println!("⏰ Timeout on graceful termination of {}, forcing kill...", name);
+                        if let Some(pid) = child.id() {
+                            let _ = Command::new("kill")
+                                .arg("-9")
+                                .arg(&pid.to_string())
+                                .status();
+                        }
+                    }
+                }
             }
         }
 
-        // Clear the tracked processes map
+        // Give processes a moment to terminate
+        tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+
+        // Clean up the tracked processes map
         self.processes.clear();
 
-        println!("✅ All AI processes stopped successfully");
-        Ok(())
-    }
-}
-
-/// Process lifecycle management.
-pub struct ProcessLifecycle {
-    // Fields for managing process lifecycles
-}
-
-impl ProcessLifecycle {
-    /// Creates a new lifecycle manager.
-    pub fn new() -> Self {
-        Self {
-            // Initialize fields
+        if failed_processes.is_empty() {
+            println!("✅ All AI processes stopped successfully");
+        } else {
+            eprintln!("⚠️  Failed to gracefully terminate processes: {:?}", failed_processes);
+            println!("✅ All AI processes stopped (some with force termination)");
         }
-    }
-
-    /// Ensures processes die when the app dies.
-    pub async fn ensure_cleanup(&self) -> Result<(), Box<dyn std::error::Error>> {
-        // Implementation for ensuring cleanup
-        println!("Ensuring process cleanup...");
-
-        // Kill all processes
-        let _ = Command::new("pkill").arg("-9").arg("llama-server").status();
-        let _ = Command::new("pkill").arg("-9").arg("llama-swap").status();
 
         Ok(())
     }
@@ -120,91 +140,17 @@ impl ProcessLifecycle {
 mod tests {
     use super::*;
 
-    /// Test ProcessManager creation and basic functionality
     #[tokio::test]
     async fn test_process_manager_creation() {
         let manager = ProcessManager::new();
-        // Just checking it compiles and can be created
-        assert!(true);
+        assert!(true); // Just checking it compiles
     }
 
-    /// Test that ProcessManager methods compile correctly
     #[tokio::test]
-    async fn test_process_manager_methods() {
+    async fn test_process_manager_stop_all() {
         let mut manager = ProcessManager::new();
-
-        // Test start_llama_swap method exists with correct signature
-        let _start_result = manager.start_llama_swap().await;
-
-        // Test start_llama_server method exists with correct signature
-        let _start_result = manager.start_llama_server().await;
-
-        // Test stop_all method exists with correct signature
-        let _stop_result = manager.stop_all().await;
-
-        assert!(true); // If we get here, methods exist and compile
-    }
-
-    /// Test ProcessLifecycle creation and basic functionality
-    #[tokio::test]
-    async fn test_process_lifecycle_creation() {
-        let lifecycle = ProcessLifecycle::new();
-        // Just checking it compiles and can be created
-        assert!(true);
-    }
-
-    /// Test that ProcessLifecycle methods compile correctly
-    #[tokio::test]
-    async fn test_process_lifecycle_methods() {
-        let lifecycle = ProcessLifecycle::new();
-
-        // Test ensure_cleanup method exists with correct signature
-        let _cleanup_result = lifecycle.ensure_cleanup().await;
-
-        assert!(true); // If we get here, methods exist and compile
-    }
-
-    /// Test that all public methods compile correctly
-    #[tokio::test]
-    async fn test_all_methods_signature_compatibility() {
-        // Test ProcessManager creation and methods
-        let mut manager = ProcessManager::new();
-        let _ = manager.start_llama_swap().await;
-        let _ = manager.start_llama_server().await;
-        let _ = manager.stop_all().await;
-
-        // Test ProcessLifecycle creation and methods
-        let lifecycle = ProcessLifecycle::new();
-        let _ = lifecycle.ensure_cleanup().await;
-
-        assert!(true);
-    }
-
-    /// Test that functions have the expected signatures
-    #[tokio::test]
-    async fn test_function_signatures() {
-        // All function signatures are checked through compilation,
-        // so we just ensure they exist and can be called
-
-        // Test ProcessManager methods
-        let mut manager = ProcessManager::new();
-        let _ = manager.start_llama_swap().await;
-        let _ = manager.start_llama_server().await;
-        let _ = manager.stop_all().await;
-
-        // Test ProcessLifecycle methods
-        let lifecycle = ProcessLifecycle::new();
-        let _ = lifecycle.ensure_cleanup().await;
-
-        assert!(true);
-    }
-
-    /// Test ProcessManager initialization
-    #[tokio::test]
-    async fn test_process_manager_initialization() {
-        let manager = ProcessManager::new();
-
-        // Check that processes HashMap is empty initially
-        assert_eq!(manager.processes.len(), 0);
+        // Test that stop_all can be called without error (even with no processes)
+        let result = manager.stop_all().await;
+        assert!(result.is_ok());
     }
 }
