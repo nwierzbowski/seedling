@@ -107,9 +107,11 @@ impl SeedlingApp {
                     break;
                 }
                 // Add other event handling here
-                _ = tokio::time::sleep(tokio::time::Duration::from_secs(10)) => {
-                    // Periodic maintenance tasks
+                _ = tokio::time::sleep(tokio::time::Duration::from_secs(5)) => {
+                    // Periodic maintenance tasks including process monitoring
                     self.periodic_maintenance().await?;
+                    // Monitor processes for health and restarts
+                    self.process_manager.monitor_processes().await?;
                 }
             }
         }
