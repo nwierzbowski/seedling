@@ -64,3 +64,57 @@ The project uses several Rust crates including:
 - `regex` for parsing output
 
 This is a sophisticated system designed to create a safe, controlled environment for AI agent development and testing with proper resource management, process lifecycle control, and terminal-based collaboration between multiple agent types.
+
+## Future Development: Tauri-Based Interface
+
+We are transitioning from the tmux-based system to a Tauri-based desktop application that will enable swapping between different agent personalities in a single window. This represents a significant architectural shift:
+
+### New Architecture Overview
+
+1. **Frontend**: Tauri-based desktop application using web technologies (Rust + WebAssembly)
+2. **Backend**: Rust backend for system management, process control, and hardware interaction
+3. **Agent Switching**: Ability to swap between different Claude personalities within a single window
+4. **Integrated Interface**: Unified UI that can display multiple agent roles simultaneously
+
+### Key Features of New Implementation
+
+- Single-window interface with agent switching capability
+- Seamless integration with Claude API endpoints
+- Cross-platform desktop application
+- Modern web-based UI components
+- Persistent agent configurations
+- Real-time agent status monitoring
+
+## Development Roadmap
+
+### Phase 1: Infrastructure Setup (Completed)
+- [ ] Project structure migration to Tauri
+- [ ] Rust backend architecture design
+- [ ] Basic Tauri application scaffolding
+- [ ] Build system configuration
+
+### Phase 2: Core System Components
+- [ ] Hardware Manager Implementation
+- [ ] Process Management System
+- [ ] Agent Personality Manager
+- [ ] Configuration Storage System
+
+### Phase 3: User Interface Development
+- [ ] Main Application Window Design
+- [ ] Agent Switching Interface
+- [ ] Terminal/Console Component
+- [ ] Status Monitoring Dashboard
+- [ ] Settings and Preferences Panel
+
+### Phase 4: Integration and Testing
+- [ ] API Integration with Claude services
+- [ ] Hardware Safety Protocol Implementation
+- [ ] Process Lifecycle Management
+- [ ] Cross-platform Testing
+- [ ] Performance Optimization
+
+### Phase 5: Finalization and Documentation
+- [ ] Complete User Guide
+- [ ] API Documentation
+- [ ] Deployment Instructions
+- [ ] Release Notes
