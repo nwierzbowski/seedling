@@ -94,7 +94,7 @@ fn resize_pty(rows: u16, cols: u16, state: tauri::State<'_, TerminalState>) {
 /// Application state for managing seedling's core components
 pub struct AppState {
     /// Hardware manager for GPU configuration
-    hardware_manager: Arc<Mutex<hardware::NvSmiLockManager>>,
+    // hardware_manager: Arc<Mutex<hardware::NvSmiLockManager>>,
     /// Process manager for AI servers
     process_manager: Arc<Mutex<process::ProcessManager>>,
 }
@@ -104,7 +104,7 @@ pub type ManagedState = Arc<AppState>;
 impl AppState {
     pub fn new() -> Self {
         Self {
-            hardware_manager: Arc::new(Mutex::new(hardware::NvSmiLockManager::new())),
+            // hardware_manager: Arc::new(Mutex::new(hardware::NvSmiLockManager::new())),
             process_manager: Arc::new(Mutex::new(process::ProcessManager::new())),
         }
     }
