@@ -41,18 +41,12 @@ impl TmuxManager {
             .unwrap_or(false);
 
         if session_exists {
-            println!("🔄 Session '{}' already exists, attaching to it...", self.session_name);
-            // Attach to existing session
+            println!("🔄 Session '{}' already exists, killing it...", self.session_name);
+            // Kill existing session
             let _ = Command::new("tmux")
-                .args(&["attach-session", "-t", &self.session_name])
+                .args(&["kill-session", "-t", &self.session_name])
                 .status();
-            return Ok(());
         }
-
-        // Kill existing session if it exists (for cleanup)
-        let _ = Command::new("tmux")
-            .args(&["kill-session", "-t", &self.session_name])
-            .status();
 
         // Create new session with detached mode (no-attach)
         let _ = Command::new("tmux")
@@ -77,6 +71,11 @@ impl TmuxManager {
         self.inject_agent(0, "engineer");
         self.inject_agent(1, "tester");
         self.inject_agent(2, "auditor");
+
+        // Attach to the new session
+        let _ = Command::new("tmux")
+            .args(&["attach-session", "-t", &self.session_name])
+            .status();
 
         println!("✅ War Room layout constructed with 3 panes.");
         Ok(())
