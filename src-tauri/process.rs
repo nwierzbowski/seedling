@@ -3,8 +3,8 @@
 //! This module manages the lifecycle of the llama-swap process ensuring it
 //! is properly started, monitored, and terminated when the application dies.
 
-use std::process::Command;
-use tokio::process::Command as TokioCommand;
+use std::{process::{Command}, sync::{Arc, Mutex}};
+use tokio::process::{Child, Command as TokioCommand};
 use std::collections::HashMap;
 use tokio::time::{timeout, Duration, sleep};
 use anyhow::Result;
@@ -25,13 +25,13 @@ pub enum ProcessStatus {
 /// Manages AI processes like llama-swap.
 pub struct ProcessManager {
     /// Map of process names to their handles
-    processes: HashMap<String, tokio::process::Child>,
+    processes: HashMap<String, Child>,
     /// Map of process names to their status
     process_status: HashMap<String, ProcessStatus>,
-    /// Map of process names to restart counts
-    restart_counts: HashMap<String, u32>,
-    /// Maximum restart attempts before giving up
-    max_restart_attempts: u32,
+    // /// Map of process names to restart counts
+    // restart_counts: HashMap<String, u32>,
+    // /// Maximum restart attempts before giving up
+    // max_restart_attempts: u32,
 }
 
 impl ProcessManager {
@@ -40,8 +40,8 @@ impl ProcessManager {
         Self {
             processes: HashMap::new(),
             process_status: HashMap::new(),
-            restart_counts: HashMap::new(),
-            max_restart_attempts: 3,
+            // restart_counts: HashMap::new(),
+            // max_restart_attempts: 3,
         }
     }
 
@@ -56,14 +56,14 @@ impl ProcessManager {
             .spawn()
             .map_err(|e| format!("Failed to start llama-swap: {}", e))?;
 
-        let pid = child.id().unwrap_or(0);
+        let pid = child.id();
 
         // Store the process handle for proper cleanup
         self.processes.insert("llama-swap".to_string(), child);
         self.process_status.insert("llama-swap".to_string(), ProcessStatus::Running);
-        self.restart_counts.insert("llama-swap".to_string(), 0);
+        // self.restart_counts.insert("llama-swap".to_string(), 0);
 
-        println!("✅ Started llama-swap server with PID: {}", pid);
+        println!("✅ Started llama-swap server with PID: {:?}", pid);
         Ok(())
     }
 
@@ -86,7 +86,6 @@ impl ProcessManager {
         for name in process_names {
             if let Some(child) = self.processes.get_mut(&name) {
                 println!("Terminating {}...", &name);
-
                 // Try to terminate the process gracefully using kill() method
                 // Use SIGTERM for graceful termination first
                 match timeout(Duration::from_millis(2000), child.kill()).await {

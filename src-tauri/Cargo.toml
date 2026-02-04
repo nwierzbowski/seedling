@@ -3,6 +3,10 @@ name = "seedling"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "seedling"
+path = "main.rs"
+
 [dependencies]
 # Error handling
 anyhow = "1.0"
@@ -27,3 +31,13 @@ notify = "6.0"
 
 # Regex (For parsing GPU output)
 regex = "1.5"
+
+# Tauri Desktop Framework
+tauri = { version = "2.0", features = [] }
+# Add the shell plugin
+tauri-plugin-shell = "2.0" 
+tauri-plugin-pty = "0.2.1"
+portable-pty = "0.9.0"
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
