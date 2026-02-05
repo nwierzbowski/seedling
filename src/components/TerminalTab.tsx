@@ -57,8 +57,8 @@ function TerminalTab() {
       resizeObserver.observe(container);
 
       await invoke("resize_pty", {
-        cols: terminal.cols + 1,
-        rows: terminal.rows,
+        cols: terminal.cols,
+        rows: terminal.rows + 1,
       });
 
       // Immediately tell it the correct size
