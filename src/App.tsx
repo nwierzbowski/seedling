@@ -3,6 +3,7 @@ import './App.css';
 import TerminalTab from './components/TerminalTab';
 import AgentsTab from './components/AgentsTab';
 import SettingsTab from './components/SettingsTab';
+import { ReactFlowProvider } from '@xyflow/react';
 
 function App() {
   const [activeTab, setActiveTab] = useState('terminal');
@@ -14,7 +15,7 @@ function App() {
       case 'terminal':
         return <TerminalTab key="terminal-tab" />;
       case 'agents':
-        return <AgentsTab key="agents-tab" />;
+        return <ReactFlowProvider ><AgentsTab key="agents-tab" /></ReactFlowProvider>;
       case 'settings':
         return <SettingsTab key="settings-tab" />;
       default:

@@ -1,10 +1,17 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import {
   ReactFlow,
   applyNodeChanges,
   applyEdgeChanges,
   addEdge,
   Background,
+  useReactFlow,
+  ReactFlowProvider,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -40,12 +47,21 @@ function AgentsTab() {
   const [nodes, setNodes] =
     useState<any[]>(initialNodes);
   const [edges, setEdges] = useState<any[]>([]);
-  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const [menuPosition, setMenuPosition] =
+    useState({ x: 0, y: 0 });
+    
+  const { screenToFlowPosition } = useReactFlow();
 
   const mousePos = useRef({ x: 0, y: 0 });
-  const onPaneMouseMove = useCallback((event: React.MouseEvent) => {
-    mousePos.current = { x: event.clientX, y: event.clientY };
-  }, []);
+  const onPaneMouseMove = useCallback(
+    (event: React.MouseEvent) => {
+      mousePos.current = {
+        x: event.clientX,
+        y: event.clientY,
+      };
+    },
+    [],
+  );
 
   const onNodesChange = useCallback(
     (changes: any) =>
@@ -77,12 +93,18 @@ function AgentsTab() {
   };
 
   // Handle keyboard shortcuts with custom hook
-  const [showMenu, setShowMenu] = useShiftAHotkey();
+  const [showMenu, setShowMenu] =
+    useShiftAHotkey();
 
   // Set menu position only when it opens (not following mouse)
   useEffect(() => {
     if (showMenu) {
-      setMenuPosition({ x: mousePos.current.x, y: mousePos.current.y });
+      setMenuPosition(
+        {
+          x: mousePos.current.x,
+          y: mousePos.current.y,
+        },
+      );
     }
   }, [showMenu]);
 
@@ -90,9 +112,14 @@ function AgentsTab() {
   const handleAddAgent = (agentType: string) => {
     const newNode = {
       id: `node-${Date.now()}`,
-      data: { label: `New ${agentType.charAt(0).toUpperCase() + agentType.slice(1)} Agent` },
+      data: {
+        label: `New ${agentType.charAt(0).toUpperCase() + agentType.slice(1)} Agent`,
+      },
       type: agentType,
-      position: { x: menuPosition.x, y: menuPosition.y + 20 }
+      position: screenToFlowPosition({
+        x: menuPosition.x,
+        y: menuPosition.y + 20,
+      }),
     };
     setNodes(prev => [...prev, newNode]);
   };
@@ -101,13 +128,6 @@ function AgentsTab() {
     <div
       style={{ width: "100vw", height: "100vh" }}
     >
-      <AgentsMenu
-        position={menuPosition}
-        isVisible={showMenu}
-        onClose={() => setShowMenu(false)}
-        onAddAgent={handleAddAgent}
-      />
-
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -118,6 +138,12 @@ function AgentsTab() {
         fitView
         nodeTypes={nodeTypes}
       >
+        <AgentsMenu
+          position={menuPosition}
+          isVisible={showMenu}
+          onClose={() => setShowMenu(false)}
+          onAddAgent={handleAddAgent}
+        />
         <Background />
       </ReactFlow>
     </div>
