@@ -113,7 +113,7 @@ function AgentsTab() {
     const newNode = {
       id: `node-${Date.now()}`,
       data: {
-        label: `New ${agentType.charAt(0).toUpperCase() + agentType.slice(1)} Agent`,
+        label: `${agentType.charAt(0).toUpperCase() + agentType.slice(1)} Agent`,
       },
       type: agentType,
       position: screenToFlowPosition({
