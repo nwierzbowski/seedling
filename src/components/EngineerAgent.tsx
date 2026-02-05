@@ -1,29 +1,44 @@
-import Agent from './AgentBase';
 import React from 'react';
+import { Handle, Position } from '@xyflow/react';
 
-class EngineerAgent extends Agent {
-  constructor(props: any) {
-    super(props);
-    // Configure the agent internally
-    this.agentType = 'engineer';
-  }
-
-  getStyles(): React.CSSProperties {
-    return {
+// Wrapper function to create Engineer Agent component
+export const createEngineerAgent = () => {
+  const EngineerAgentComponent = ({ data, id, isConnectable }: any) => {
+    // Engineer-specific styles
+    const agentStyles: React.CSSProperties = {
       border: '2px solid #2196F3',
       backgroundColor: '#E3F2FD',
-      color: '#0D47A1'
+      color: '#0D47A1',
+      padding: '10px',
+      borderRadius: '4px',
+      minWidth: '120px',
+      textAlign: 'center',
+      position: 'relative'
     };
-  }
 
-  renderContent() {
+    // Render content specific to Engineer Agent
+    const renderContent = () => {
+      return (
+        <div>
+          <strong>{data?.label || 'Engineer Agent'}</strong>
+          <div style={{ fontSize: '10px' }}>ID: {id}</div>
+        </div>
+      );
+    };
+
     return (
-      <div>
-        <strong>{this.props.data?.label || 'Tester Agent'}</strong>
-        <div style={{ fontSize: '10px' }}>ID: {this.props.id}</div>
+      <div style={agentStyles}>
+        {/* Input Connection Point */}
+        <Handle type="target" position={Position.Top} isConnectable={isConnectable} />
+
+        {/* Specific Agent Content */}
+        {renderContent()}
+
+        {/* Output Connection Point */}
+        <Handle type="source" position={Position.Bottom} isConnectable={isConnectable} />
       </div>
     );
-  }
-}
+  };
 
-export default EngineerAgent;
+  return EngineerAgentComponent;
+};

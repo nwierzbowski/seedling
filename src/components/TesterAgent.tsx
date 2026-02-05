@@ -1,28 +1,44 @@
-import Agent from './AgentBase';
 import React from 'react';
+import { Handle, Position } from '@xyflow/react';
 
-class TesterAgent extends Agent {
-  constructor(props: any) {
-    super(props);
-    this.agentType = 'tester';
-  }
-
-  getStyles(): React.CSSProperties {
-    return {
+// Wrapper function to create Tester Agent component
+export const createTesterAgent = () => {
+  const TesterAgentComponent = ({ data, id, isConnectable }: any) => {
+    // Tester-specific styles
+    const agentStyles: React.CSSProperties = {
       border: '2px solid #4CAF50',
       backgroundColor: '#E8F5E9',
-      color: '#2E7D32'
+      color: '#2E7D32',
+      padding: '10px',
+      borderRadius: '4px',
+      minWidth: '120px',
+      textAlign: 'center',
+      position: 'relative'
     };
-  }
 
-  renderContent() {
+    // Render content specific to Tester Agent
+    const renderContent = () => {
+      return (
+        <div>
+          <strong>{data?.label || 'Tester Agent'}</strong>
+          <div style={{ fontSize: '10px' }}>ID: {id}</div>
+        </div>
+      );
+    };
+
     return (
-      <div>
-        <strong>{this.props.data?.label || 'Tester Agent'}</strong>
-        <div style={{ fontSize: '10px' }}>ID: {this.props.id}</div>
+      <div style={agentStyles}>
+        {/* Input Connection Point */}
+        <Handle type="target" position={Position.Top} isConnectable={isConnectable} />
+
+        {/* Specific Agent Content */}
+        {renderContent()}
+
+        {/* Output Connection Point */}
+        <Handle type="source" position={Position.Bottom} isConnectable={isConnectable} />
       </div>
     );
-  }
-}
+  };
 
-export default TesterAgent;
+  return TesterAgentComponent;
+};
