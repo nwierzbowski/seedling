@@ -1,5 +1,5 @@
 {
-  "productName": "Seedling",
+  "productName": "AIDME",
   "version": "0.1.0",
   "identifier": "com.seedling.dev",
   "build": {
@@ -11,7 +11,7 @@
   "app": {
     "windows": [
       {
-        "title": "Seedling AI Development Environment",
+        "title": "AIDME (AI Development Management Environment)",
         "width": 1400,
         "height": 900,
         "minWidth": 800,
@@ -24,10 +24,5 @@
     "security": {
       "csp": null
     }
-  },
-  "bundle": {
-    "active": true,
-    "targets": ["deb", "appimage"],
-    "icon": [ "icons/icon.png" ]
   }
 }

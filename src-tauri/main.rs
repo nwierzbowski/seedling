@@ -10,7 +10,6 @@
 
 mod hardware;
 mod process;
-mod tauri_interface;
 
 use portable_pty::{CommandBuilder, MasterPty, PtySize, native_pty_system};
 use std::{error::Error, sync::Arc};

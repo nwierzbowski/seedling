@@ -18,3 +18,12 @@
   padding: 8px 0;
   border-bottom: 1px solid #3e3e42;
 }
+
+.agent-list {
+  margin-top: 20px;
+}
+
+.agent-list h3 {
+  margin-top: 0;
+  color: #d4d4d4;
+}
