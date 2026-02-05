@@ -1,0 +1,20 @@
+.tab-content {
+  padding: 20px;
+  height: 100%;
+  overflow: auto;
+}
+
+.tab-content h2 {
+  margin-top: 0;
+  color: #d4d4d4;
+}
+
+.tab-content ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.tab-content li {
+  padding: 8px 0;
+  border-bottom: 1px solid #3e3e42;
+}

@@ -19,12 +19,41 @@
   background-color: #252526;
   border-bottom: 1px solid #3e3e42;
   flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .app-header h1 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
+}
+
+.tabs-container {
+  display: flex;
+  gap: 4px;
+}
+
+.tab {
+  background-color: #3c3c3c;
+  color: #d4d4d4;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px 4px 0 0;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.tab:hover {
+  background-color: #4a4a4a;
+}
+
+.tab.active {
+  background-color: #0078d4;
+  color: white;
 }
 
 .app-main {

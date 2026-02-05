@@ -1,0 +1,31 @@
+.tab-content {
+  padding: 20px;
+  height: 100%;
+  overflow: auto;
+}
+
+.tab-content h2 {
+  margin-top: 0;
+  color: #d4d4d4;
+}
+
+.tab-content form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tab-content label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tab-content select,
+.tab-content input {
+  padding: 8px;
+  background-color: #2d2d2d;
+  border: 1px solid #3e3e42;
+  color: #d4d4d4;
+  border-radius: 4px;
+}
