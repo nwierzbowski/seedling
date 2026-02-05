@@ -1,61 +1,72 @@
-import './AgentsTab.css';
-import React, { useState } from 'react';
-import ReactFlow, { Controls, Background, MiniMap } from 'reactflow';
-import 'reactflow/dist/style.css';
+import { useState, useCallback } from "react";
+import {
+  ReactFlow,
+  applyNodeChanges,
+  applyEdgeChanges,
+  addEdge,
+  Background,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 
-// Define types for our nodes and edges
-type NodeData = {
-  label: string;
-};
+// Import the array of agent implementations
+import TesterAgent from "./TesterAgent";
+import EngineerAgent from "./EngineerAgent";
+import ReviewerAgent from "./ReviewerAgent";
 
-type Node = {
-  id: string;
-  type?: string;
-  position: { x: number; y: number };
-  data: NodeData;
-};
+const initialNodes = [{id: 'node-1', data: {label: 'Tester Agent'}, type: 'tester', position: {x: 250, y: 5}}];
 
-type Edge = {
-  id: string;
-  source: string;
-  target: string;
-};
+const initialEdges = [];
 
 function AgentsTab() {
-  // Define initial nodes and edges for our flow
-  const [nodes] = useState<Node[]>([
-    { id: '1', position: { x: 0, y: 0 }, data: { label: 'Engineer' } },
-    { id: '2', position: { x: 250, y: 100 }, data: { label: 'Tester' } },
-    { id: '3', position: { x: 500, y: 0 }, data: { label: 'Auditor' } },
-  ]);
+  const [nodes, setNodes] =
+    useState(initialNodes);
+  const [edges, setEdges] =
+    useState(initialEdges);
 
-  const [edges] = useState<Edge[]>([
-    { id: 'e1-2', source: '1', target: '2' },
-    { id: 'e2-3', source: '2', target: '3' },
-  ]);
+  const onNodesChange = useCallback(
+    (changes: any) =>
+      setNodes(nodesSnapshot =>
+        applyNodeChanges(changes, nodesSnapshot),
+      ),
+    [],
+  );
+  const onEdgesChange = useCallback(
+    (changes: any) =>
+      setEdges(edgesSnapshot =>
+        applyEdgeChanges(changes, edgesSnapshot),
+      ),
+    [],
+  );
+  const onConnect = useCallback(
+    (params: any) =>
+      setEdges(edgesSnapshot =>
+        addEdge(params, edgesSnapshot),
+      ),
+    [],
+  );
+
+  // Define node types using the agent implementations directly
+  const nodeTypes = {
+    tester: TesterAgent,
+    engineer: EngineerAgent,
+    reviewer: ReviewerAgent,
+  };
 
   return (
-    <div className="tab-content">
-      <h2>Agents</h2>
-      <p>Agent collaboration flow diagram:</p>
-
-      {/* React Flow Diagram */}
-      <div style={{ width: '100%', height: '400px', border: '1px solid #ccc', borderRadius: '4px' }}>
-        <ReactFlow nodes={nodes} edges={edges}>
-          <Background />
-          <Controls />
-          <MiniMap />
-        </ReactFlow>
-      </div>
-
-      <div className="agent-list">
-        <h3>Agent Roles:</h3>
-        <ul>
-          <li>Agent 1: Engineer</li>
-          <li>Agent 2: Tester</li>
-          <li>Agent 3: Auditor</li>
-        </ul>
-      </div>
+    <div
+      style={{ width: "100vw", height: "100vh" }}
+    >
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        fitView
+        nodeTypes={nodeTypes}
+      >
+        <Background />
+      </ReactFlow>
     </div>
   );
 }
