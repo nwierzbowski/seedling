@@ -14,6 +14,7 @@ fn main() {
 
     std::env::var("TELOXIDE_TOKEN").expect("TELOXIDE_TOKEN not set in .env file");
     std::env::var("OLLAMA_API_BASE_URL").expect("OLLAMA_API_BASE_URL not set in .env file");
-    
+    std::env::var("MY_TELEGRAM_USER_ID").expect("MY_TELEGRAM_USER_ID not set in .env file");
+
     app::run();
 }
