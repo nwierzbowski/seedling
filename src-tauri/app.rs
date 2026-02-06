@@ -1,14 +1,14 @@
 //! Main application module for the seedling AI development environment.
 
-use std::sync::Arc;
+use std::{env, sync::Arc};
 
-use tauri::{Manager};
+use tauri::Manager;
 use tokio::sync::Mutex;
 
 // Import types we need
 pub use terminal::TerminalState;
 
-use crate::{hardware, process, terminal};
+use crate::{hardware, process, router_agent::{RouterAgent, SharedRouterAgent}, telegram, terminal};
 
 /// Application state for managing seedling's core components
 pub struct AppState {
@@ -16,6 +16,7 @@ pub struct AppState {
     // hardware_manager: Arc<Mutex<hardware::NvSmiLockManager>>,
     /// Process manager for AI servers
     process_manager: Arc<Mutex<process::ProcessManager>>,
+    router_agent: SharedRouterAgent,
 }
 
 pub type ManagedState = Arc<AppState>;
@@ -25,11 +26,15 @@ impl AppState {
         Self {
             // hardware_manager: Arc::new(Mutex::new(hardware::NvSmiLockManager::new())),
             process_manager: Arc::new(Mutex::new(process::ProcessManager::new())),
+            router_agent: Arc::new(Mutex::new(None)),
         }
     }
 
     pub async fn init(&self) -> Result<(), Box<dyn std::error::Error>> {
         println!("🚀 Starting seedling AI development environment...");
+
+        let agent = RouterAgent::new();
+        *self.router_agent.lock().await = Some(agent);
 
         // Initialize hardware components
         self.initialize_hardware().await?;
@@ -57,7 +62,8 @@ impl AppState {
         println!("⚙️ Starting AI processes...");
 
         // Start llama-swap server
-        self.process_manager.lock().await.start_llama_swap().await?;
+        // self.process_manager.lock().await.start_llama_swap().await?;
+        self.process_manager.lock().await.start_ollama().await?;
 
         println!("✅ AI processes started successfully");
         Ok(())
@@ -67,32 +73,42 @@ impl AppState {
 /// Main application entry point
 pub fn run() {
     let app_state: ManagedState = Arc::new(AppState::new());
-    let terminal_state = TerminalState(Arc::new(std::sync::Mutex::new(None)));
+    let terminal_state = TerminalState(Arc::new(std::sync::Mutex::new(
+        terminal::TerminalStateData::default(),
+    )));
 
     tauri::Builder::default()
         .manage(app_state.clone())
+        .manage(app_state.router_agent.clone())
         .manage(terminal_state.clone())
         .invoke_handler(tauri::generate_handler![
             // get_status,
             // switch_agent,
             // execute_command,
-            terminal::backend_write_pty,
+            terminal::write_to_buffer,
             terminal::resize_pty
         ])
         .setup(|app| {
             println!("🚀 Initializing Tauri application...");
             println!("✅ Desktop interface ready");
+
+            
+            println!("✅ OpenAI environment variables set");
+
             let handle = app.handle().clone();
 
             let state = app.state::<ManagedState>().inner().clone();
             let terminal = app.state::<TerminalState>().inner().clone();
+
+
 
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = state.init().await {
                     eprintln!("❌ Application initialization failed: {}", e);
                     return;
                 };
-                terminal::start_claude_pty(handle, terminal.clone());
+                telegram::start(state.router_agent.clone()).await;
+                // terminal::start(handle, terminal.clone());
             });
             Ok(())
         })

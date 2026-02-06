@@ -3,11 +3,13 @@
 //! This module manages the lifecycle of the llama-swap process ensuring it
 //! is properly started, monitored, and terminated when the application dies.
 
-use std::{process::{Command}, sync::{Arc, Mutex}};
-use tokio::process::{Child, Command as TokioCommand};
-use std::collections::HashMap;
-use tokio::time::{timeout, Duration, sleep};
 use anyhow::Result;
+use std::collections::HashMap;
+use std::{
+    process::Command,
+};
+use tokio::process::{Child, Command as TokioCommand};
+use tokio::time::{Duration, sleep, timeout};
 
 /// Represents the status of a managed process.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -46,7 +48,7 @@ impl ProcessManager {
     }
 
     /// Starts the llama-swap server.
-    pub async fn start_llama_swap(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn _start_llama_swap(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // Launch the new instance with specified arguments
         let child = TokioCommand::new("/home/nwier/.local/bin/llama-swap")
             .arg("--config")
@@ -60,10 +62,35 @@ impl ProcessManager {
 
         // Store the process handle for proper cleanup
         self.processes.insert("llama-swap".to_string(), child);
-        self.process_status.insert("llama-swap".to_string(), ProcessStatus::Running);
+        self.process_status
+            .insert("llama-swap".to_string(), ProcessStatus::Running);
         // self.restart_counts.insert("llama-swap".to_string(), 0);
 
         println!("✅ Started llama-swap server with PID: {:?}", pid);
+        Ok(())
+    }
+
+    pub async fn start_ollama(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+
+        // Launch the new instance with specified arguments
+        let child = TokioCommand::new("/usr/local/bin/ollama")
+            .arg("serve")
+            .env("OLLAMA_KV_CACHE_TYPE", "q4_0")
+            .env("OLLAMA_FLASH_ATTENTION", "1")
+            .env("OLLAMA_CONTEXT_LENGTH", "32768")
+            .kill_on_drop(true)
+            .spawn()
+            .map_err(|e| format!("Failed to start ollama: {}", e))?;
+
+        let pid = child.id();
+
+        // Store the process handle for proper cleanup
+        self.processes.insert("ollama".to_string(), child);
+        self.process_status
+            .insert("ollama".to_string(), ProcessStatus::Running);
+        // self.restart_counts.insert("ollama".to_string(), 0);
+
+        println!("✅ Started ollama server with PID: {:?}", pid);
         Ok(())
     }
 
@@ -91,23 +118,29 @@ impl ProcessManager {
                 match timeout(Duration::from_millis(2000), child.kill()).await {
                     Ok(Ok(_)) => {
                         println!("✅ {} terminated gracefully", &name);
-                        self.process_status.insert(name.clone(), ProcessStatus::Stopped);
+                        self.process_status
+                            .insert(name.clone(), ProcessStatus::Stopped);
                     }
                     Ok(Err(e)) => {
                         eprintln!("⚠️  Failed to terminate {} gracefully: {}", &name, e);
                         failed_processes.push(name.clone());
-                        self.process_status.insert(name.clone(), ProcessStatus::Failed);
+                        self.process_status
+                            .insert(name.clone(), ProcessStatus::Failed);
                     }
                     Err(_) => {
                         // Timeout occurred, force kill
-                        println!("⏰ Timeout on graceful termination of {}, forcing kill...", &name);
+                        println!(
+                            "⏰ Timeout on graceful termination of {}, forcing kill...",
+                            &name
+                        );
                         if let Some(pid) = child.id() {
                             let _ = Command::new("kill")
                                 .arg("-9")
                                 .arg(&pid.to_string())
                                 .status();
                         }
-                        self.process_status.insert(name.clone(), ProcessStatus::Failed);
+                        self.process_status
+                            .insert(name.clone(), ProcessStatus::Failed);
                     }
                 }
             }
@@ -122,7 +155,10 @@ impl ProcessManager {
         if failed_processes.is_empty() {
             println!("✅ All AI processes stopped successfully");
         } else {
-            eprintln!("⚠️  Failed to gracefully terminate processes: {:?}", failed_processes);
+            eprintln!(
+                "⚠️  Failed to gracefully terminate processes: {:?}",
+                failed_processes
+            );
             println!("✅ All AI processes stopped (some with force termination)");
         }
 
@@ -130,7 +166,7 @@ impl ProcessManager {
     }
 
     /// Monitors all managed processes for their current status.
-    pub async fn monitor_processes(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn _monitor_processes(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         println!("🔄 Monitoring AI processes...");
 
         // For each process we're tracking, check its status
@@ -143,15 +179,18 @@ impl ProcessManager {
                     Ok(Some(status)) => {
                         // Process has exited, update status
                         println!("⚠️  {} has exited with status: {}", &name, status);
-                        self.process_status.insert(name.clone(), ProcessStatus::Failed);
+                        self.process_status
+                            .insert(name.clone(), ProcessStatus::Failed);
                     }
                     Ok(None) => {
                         // Process is still running
-                        self.process_status.insert(name.clone(), ProcessStatus::Running);
+                        self.process_status
+                            .insert(name.clone(), ProcessStatus::Running);
                     }
                     Err(e) => {
                         eprintln!("⚠️  Failed to check status of {}: {}", &name, e);
-                        self.process_status.insert(name.clone(), ProcessStatus::Unknown);
+                        self.process_status
+                            .insert(name.clone(), ProcessStatus::Unknown);
                     }
                 }
             }
@@ -168,7 +207,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_process_manager_creation() {
-        let manager = ProcessManager::new();
+        let _manager = ProcessManager::new();
         assert!(true); // Just checking it compiles
     }
 }

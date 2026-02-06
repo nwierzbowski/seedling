@@ -4,6 +4,7 @@ import TerminalTab from './components/TerminalTab';
 import AgentsTab from './components/AgentsTab';
 import SettingsTab from './components/SettingsTab';
 import { ReactFlowProvider } from '@xyflow/react';
+import { invoke } from "@tauri-apps/api/core";
 
 function App() {
   const [activeTab, setActiveTab] = useState('terminal');
@@ -26,8 +27,26 @@ function App() {
 
   return (
     <div className="app-container">
-      <header className="app-header">
+      <header className="app-header" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
         <h1>🌱 AIDME (AI Development Management Environment)</h1>
+        <div className="search-container" style={{flex: 1, display: 'flex'}}>
+          <input
+            type="text"
+            placeholder="Search or enter command..."
+            className="search-input"
+            style={{ flex: 1 }}
+          />
+          <button type="submit" className="search-button" onClick={() => {
+            const input = document.querySelector('.search-input') as HTMLInputElement;
+            if (input && input.value.trim()) {
+              invoke('plan', { data: input.value }).then((res) => {
+                console.log('Plan result:', res);
+              });
+            }
+          }}>
+            Submit
+          </button>
+        </div>
         <div className="tabs-container">
           <button
             className={`tab ${activeTab === 'terminal' ? 'active' : ''}`}
@@ -37,7 +56,7 @@ function App() {
           </button>
           <button
             className={`tab ${activeTab === 'agents' ? 'active' : ''}`}
-            onClick={() => setActiveTab('agents')}
+            onClick={() => setActiveTab('agent')}
           >
             Agents
           </button>
@@ -48,6 +67,7 @@ function App() {
             Settings
           </button>
         </div>
+        
       </header>
       <main className="app-main">
         {renderContent()}

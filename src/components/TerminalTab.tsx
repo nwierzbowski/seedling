@@ -44,7 +44,7 @@ function TerminalTab() {
       );
 
       terminal.onData((data: string) => {
-        invoke("backend_write_pty", { data });
+        invoke("write_to_buffer", { data });
       });
 
       resizeObserver = new ResizeObserver(() => {
