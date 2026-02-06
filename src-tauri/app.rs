@@ -95,10 +95,10 @@ pub fn run() {
             
             println!("✅ OpenAI environment variables set");
 
-            let handle = app.handle().clone();
+            // let handle = app.handle().clone();
 
             let state = app.state::<ManagedState>().inner().clone();
-            let terminal = app.state::<TerminalState>().inner().clone();
+            // let terminal = app.state::<TerminalState>().inner().clone();
 
 
 
