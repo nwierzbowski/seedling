@@ -7,7 +7,6 @@ use tauri::{AppHandle, Emitter, State};
 
 use crate::{
     adme::{self, Adme},
-    router_agent::SharedRouterAgent,
 };
 
 pub struct PtySession {

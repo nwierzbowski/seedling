@@ -6,7 +6,6 @@ mod terminal;
 mod hardware;
 mod process;
 mod telegram;
-mod router_agent;
 mod filters;
 mod adme;
 
