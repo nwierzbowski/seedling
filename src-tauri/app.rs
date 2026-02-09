@@ -8,7 +8,7 @@ use tokio::sync::Mutex;
 // Import types we need
 pub use terminal::TerminalState;
 
-use crate::{hardware, process, router_agent::{RouterAgent, SharedRouterAgent}, telegram, terminal};
+use crate::{adme::Adme, hardware, process, telegram, terminal};
 
 /// Application state for managing seedling's core components
 pub struct AppState {
@@ -16,7 +16,6 @@ pub struct AppState {
     // hardware_manager: Arc<Mutex<hardware::NvSmiLockManager>>,
     /// Process manager for AI servers
     process_manager: Arc<Mutex<process::ProcessManager>>,
-    router_agent: SharedRouterAgent,
 }
 
 pub type ManagedState = Arc<AppState>;
@@ -26,15 +25,11 @@ impl AppState {
         Self {
             // hardware_manager: Arc::new(Mutex::new(hardware::NvSmiLockManager::new())),
             process_manager: Arc::new(Mutex::new(process::ProcessManager::new())),
-            router_agent: Arc::new(Mutex::new(None)),
         }
     }
 
     pub async fn init(&self) -> Result<(), Box<dyn std::error::Error>> {
         println!("🚀 Starting seedling AI development environment...");
-
-        let agent = RouterAgent::new();
-        *self.router_agent.lock().await = Some(agent);
 
         // Initialize hardware components
         self.initialize_hardware().await?;
@@ -79,12 +74,9 @@ pub fn run() {
 
     tauri::Builder::default()
         .manage(app_state.clone())
-        .manage(app_state.router_agent.clone())
+        .manage(Adme::new())
         .manage(terminal_state.clone())
         .invoke_handler(tauri::generate_handler![
-            // get_status,
-            // switch_agent,
-            // execute_command,
             terminal::write_to_buffer,
             terminal::resize_pty
         ])
@@ -92,22 +84,20 @@ pub fn run() {
             println!("🚀 Initializing Tauri application...");
             println!("✅ Desktop interface ready");
 
-            
             println!("✅ OpenAI environment variables set");
 
             // let handle = app.handle().clone();
 
             let state = app.state::<ManagedState>().inner().clone();
+            let adme = app.state::<Adme>().inner().clone();
             // let terminal = app.state::<TerminalState>().inner().clone();
-
-
 
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = state.init().await {
                     eprintln!("❌ Application initialization failed: {}", e);
                     return;
                 };
-                telegram::start(state.router_agent.clone()).await;
+                telegram::start(adme.clone()).await;
                 // terminal::start(handle, terminal.clone());
             });
             Ok(())

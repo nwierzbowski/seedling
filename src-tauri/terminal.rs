@@ -5,7 +5,10 @@ use portable_pty::{CommandBuilder, MasterPty, PtySize, native_pty_system};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, State};
 
-use crate::router_agent::{SharedRouterAgent};
+use crate::{
+    adme::{self, Adme},
+    router_agent::SharedRouterAgent,
+};
 
 pub struct PtySession {
     master: Box<dyn MasterPty + Send>,
@@ -40,9 +43,7 @@ pub fn _start(app: AppHandle, state: TerminalState) {
         .unwrap();
 
     let cmd = CommandBuilder::new("sh");
-    pair.slave
-        .spawn_command(cmd)
-        .expect("Failed to start bash");
+    pair.slave.spawn_command(cmd).expect("Failed to start bash");
     drop(pair.slave); // Close the slave end in the parent
 
     let reader = pair
@@ -75,7 +76,7 @@ pub fn _start(app: AppHandle, state: TerminalState) {
 pub async fn write_to_buffer(
     data: String,
     state: State<'_, TerminalState>,
-    agent: State<'_, SharedRouterAgent>,
+    agent: State<'_, Adme>,
     app: AppHandle,
 ) -> Result<(), String> {
     // If no newline, buffer and echo back to terminal
@@ -83,7 +84,7 @@ pub async fn write_to_buffer(
         let mut state_guard = state.0.lock().unwrap();
         state_guard.input_buffer.push_str(&data);
         drop(state_guard); // Release lock before emitting
-        
+
         // Echo the typed character back to the terminal
         app.emit("pty-data", data).map_err(|e| e.to_string())?;
         return Ok(());
@@ -101,19 +102,13 @@ pub async fn write_to_buffer(
     // Echo the newline
     app.emit("pty-data", "\r\n").map_err(|e| e.to_string())?;
 
-    let response = {
-        let guard = agent.inner().lock().await;
-        if let Some(agent) = guard.as_ref() {
-            agent.prompt(&input).await?
-        } else {
-            return Err("Router agent not initialized".to_string());
-        }
-    };
+    let response = agent.prompt(&input).await;
 
     // Convert Unix newlines to terminal newlines
     let terminal_response = response.replace("\n", "\r\n");
-    
-    app.emit("pty-data", format!("{}\r\n", terminal_response)).map_err(|e| e.to_string())?;
+
+    app.emit("pty-data", format!("{}\r\n", terminal_response))
+        .map_err(|e| e.to_string())?;
 
     Ok(())
 }

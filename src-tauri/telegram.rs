@@ -1,7 +1,10 @@
-use crate::router_agent::SharedRouterAgent;
+use crate::{
+    adme::{Adme},
+    filters::filter_think_tag,
+};
 use teloxide::prelude::*;
 
-pub async fn start(agent: SharedRouterAgent) {
+pub async fn start(agent: Adme) {
     pretty_env_logger::init();
     let bot = Bot::from_env();
 
@@ -15,18 +18,16 @@ pub async fn start(agent: SharedRouterAgent) {
                 Ok(())
             } else {
                 let input = msg.text().unwrap_or("hello").to_string();
-                let guard = agent.lock().await;
-                if let Some(router) = guard.as_ref() {
-                    match router.prompt(&input).await {
-                        Ok(reply) => {
-                            bot.send_message(msg.chat.id, reply).await?;
-                        }
-                        Err(err) => {
-                            bot.send_message(msg.chat.id, format!("error: {}", err))
-                                .await?;
-                        }
-                    }
+
+                if input.eq_ignore_ascii_case("/start") {
+                    bot.send_message(msg.chat.id, "Welcome to the bot!").await?;
+                    return Ok(());
                 }
+
+                let mut reply = agent.prompt(&input).await;
+                reply = filter_think_tag(&reply);
+                bot.send_message(msg.chat.id, &reply).await?;
+
                 Ok(())
             }
         }
