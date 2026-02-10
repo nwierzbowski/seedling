@@ -2,6 +2,7 @@
 
 use std::{env, sync::Arc};
 
+use hyperon::metta::{runner::Metta, text::SExprParser};
 use tauri::Manager;
 use tokio::sync::Mutex;
 
@@ -91,6 +92,13 @@ pub fn run() {
             let state = app.state::<ManagedState>().inner().clone();
             let adme = app.state::<Adme>().inner().clone();
             // let terminal = app.state::<TerminalState>().inner().clone();
+
+            let metta = Metta::new(None);
+
+            let core_logic = include_str!("../core_logic.metta");
+
+            metta.run(SExprParser::new(core_logic)).expect("Failed to run core logic");
+
 
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = state.init().await {

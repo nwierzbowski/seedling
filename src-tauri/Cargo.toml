@@ -7,7 +7,10 @@ edition = "2024"
 name = "seedling"
 path = "main.rs"
 
+
 [dependencies]
+hyperon = { path = "/home/nwier/Documents/git/hyperon-experimental/lib", default-features = false, features = ["pkg_mgmt"] }
+
 # Error handling
 anyhow = "1.0"
 
