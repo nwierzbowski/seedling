@@ -1,64 +1,64 @@
 # Seedling AI Development Environment - Tauri Module
 
+## 📝 File Scope
+
+This `CLAUDE.md` contains only details pertinent to the `src-tauri/` level. For frontend React details, see `src/CLAUDE.md`.
+
 ## What This Project Does
 
-Seedling is an AI development environment orchestration tool written in Rust designed to manage hardware resources and AI processes for Claude agents. It provides a sophisticated desktop application interface using Tauri.
-
+This Rust module provides the backend for the Seedling Tauri application, handling hardware resource management (NVIDIA GPU), AI process lifecycle control, and orchestration of agent workflows.
 ## Why This Project Exists
 
-The project addresses the need for a structured, safe, and efficient environment for developing AI agents that work with Claude models. Key motivations include:
-
-1. **Hardware Safety**: Managing NVIDIA GPU resources with safety protocols including persistence mode, power limits, and clock locking to prevent system instability
-2. **Process Management**: Properly starting, monitoring, and terminating AI processes like llama-swap servers
-3. **Environment Setup**: Creating a sophisticated desktop application interface that enables multiple agents to work together in coordinated development workflows
-4. **Resource Control**: Preventing GPU resource conflicts by ensuring proper locking mechanisms
-
+To provide a controlled, safe, and efficient desktop environment for developing and testing AI agents with Claude models—ensuring resource safety, process reliability, and coordinated agent workflows.
 ## How This System Works
 
-### Architecture Overview
+### Architecture
 
-The system is organized into three main modules that work together:
+- **Tauri Module** (`src-tauri/main.rs`):
+  Entry point and orchestrator. Initializes and coordinates the Hardware, Process, and ADME modules. Provides the desktop UI and manages application state.
 
-1. **Hardware Module** (`src-tauri/hardware.rs`)
-   - Manages NVIDIA SMI locks for GPU access
-   - Implements safety protocols including persistence mode, power limits (300W), and clock locking (2100MHz)
-   - Provides GPU monitoring capabilities
-   - Uses `nvidia-smi` commands with sudo privileges for hardware configuration
+- **Hardware Module** (`src-tauri/hardware.rs`):
+  Handles GPU access via `nvidia-smi` with sudo, enforcing safety: persistence mode, 300W power limit, and 2100MHz clock locking.
 
-2. **Process Module** (`src-tauri/process.rs`)
-   - Manages AI processes like llama-swap server lifecycle
-   - Handles graceful startup, monitoring, and termination of processes
-   - Implements process restart logic with maximum retry limits
-   - Uses `tokio::process` for async process management
+- **Process Module** (`src-tauri/process.rs`):
+  Manages AI process lifecycle (start, monitor, restart, stop) using `tokio::process`, with retry logic and graceful shutdown.
 
-3. **Tauri Module** (`src-tauri/main.rs`)
-   - Creates sophisticated desktop application interface using Tauri
-   - Manages application state including hardware and process managers
-   - Handles backend communication with frontend
+- **ADME Module** (`src-tauri/adme/`):
+  Contains the core agent system:
+  - `agent.rs`: Agent trait for all ADME agents
+  - `memory.rs`: Vector storage with similarity search for long-term memory
+  - `planner.rs`: Language analyst that deconstructs natural language into symbolic graphs
+  - `translator.rs`: Conversational response generator
+  - `metta.rs`: MeTTa symbolic logic integration
+  - `tools/`: Tool implementations for MeTTa and memory operations
+  → See `src-tauri/adme/CLAUDE.md` for agent and tool details.
+
+### Capabilities & Schemas
+
+- **`src-tauri/capabilities/`**: Tauri capability definitions
+  → See `src-tauri/capabilities/CLAUDE.md` for permission configuration.
+
+- **`src-tauri/gen/`**: Auto-generated Tauri build artifacts
+  → See `src-tauri/gen/CLAUDE.md` for generated code details.
 
 ### Execution Flow
 
-1. **Initialization**: The main application (`src-tauri/main.rs`) creates instances of all modules
-2. **Hardware Setup**: The hardware manager engages safety protocols including GPU locking
-3. **Process Startup**: AI processes (like llama-swap) are started with proper configuration
-4. **Application Interface**: Tauri-based desktop application is created with the sophisticated interface
-5. **Agent Launch**: Claude agents are launched in their respective panes with appropriate configurations
+1. Application starts and initializes Hardware, Process, and ADME managers.
+2. Hardware module secures GPU with safety protocols.
+3. AI processes (e.g., llama-swap) are launched and monitored.
+4. Tauri UI renders agent panes and enables user interaction.
+5. Agents run in coordinated environment; system shuts down cleanly.
 
 ### Key Features
 
-- **Safety Protocols**: Implements NVIDIA GPU safety measures to prevent system instability
-- **Process Monitoring**: Continuously monitors AI processes for health and restarts when needed
-- **Graceful Shutdown**: Proper cleanup of resources and processes when shutting down
-- **Error Handling**: Comprehensive error handling with proper cleanup mechanisms
-
+- GPU safety via locking and power/clock limits
+- Process resilience with automatic restarts
+- Graceful shutdown with resource cleanup
+- Centralized orchestration via Tauri UI
 ### Dependencies
 
-The project uses several Rust crates including:
-- `tokio` for async runtime
-- `anyhow` for error handling
-- `clap` for command-line argument parsing
-- `sysinfo`, `nix` for system operations
-- `notify` for filesystem watching
-- `regex` for parsing output
+- `tokio`, `anyhow`, `clap`, `sysinfo`, `nix`, `notify`, `regex`
+  (Used for async, error handling, CLI, system ops, filesystem watching, and parsing)
 
-This is a sophisticated system designed to create a safe, controlled environment for AI agent development and testing with proper resource management, process lifecycle control, and desktop-based collaboration between multiple agent types.
+> Note: Implementation details (e.g., command execution, parsing logic) are offloaded to respective subdirectory `CLAUDE.md` files.
+

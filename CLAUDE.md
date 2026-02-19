@@ -1,55 +1,34 @@
-# AIDME AI Development Management Environment
+# Seedling Project - Top Level
 
-## What This Project Does
+## 📝 File Scope
 
-AIDME is an AI development environment orchestration tool written in Rust designed to manage hardware resources and AI processes for Claude agents. It provides a sophisticated terminal-based interface with tmux pane layouts to support different agent roles (Engineer, Tester, Auditor) working together in what's called a "War Room" layout.
+This `CLAUDE.md` contains only details pertinent to its level in the project hierarchy. **Each `CLAUDE.md` in subdirectories should follow the same practice**: document only what's relevant at that level, pointing to deeper subdirectories as needed.
 
-## Why This Project Exists
+## Overview
 
-The project addresses the need for a structured, safe, and efficient environment for developing AI agents that work with Claude models. Key motivations include:
+This project is a Tauri-based desktop application for managing AI agent development workflows. It provides a unified interface for coordinating multiple Claude agents with hardware resource management (NVIDIA GPU) and process lifecycle control.
 
-1. **Hardware Safety**: Managing NVIDIA GPU resources with safety protocols including persistence mode, power limits, and clock locking to prevent system instability
-2. **Process Management**: Properly starting, monitoring, and terminating AI processes like llama-swap servers
-3. **Environment Setup**: Creating a sophisticated terminal layout that enables multiple agents to work together in coordinated development workflows
-4. **Resource Control**: Preventing GPU resource conflicts by ensuring proper locking mechanisms
+## High-Level Design & Best Practices
 
-## How This System Works
-
-### Execution Flow
-
-1. **Initialization**: The main application (`src-tauri/main.rs`) creates instances of all modules
-2. **Hardware Setup**: The hardware manager engages safety protocols including GPU locking
-3. **Process Startup**: AI processes (like llama-swap) are started with proper configuration
-4. **Terminal Layout**: Tmux session is created with the sophisticated 3-pane layout
-5. **Agent Launch**: Claude agents are launched in their respective panes with appropriate configurations
-
-### Key Features
-
-- **Safety Protocols**: Implements NVIDIA GPU safety measures to prevent system instability
-- **Process Monitoring**: Continuously monitors AI processes for health and restarts when needed
-- **Graceful Shutdown**: Proper cleanup of resources and processes when shutting down
-- **Terminal Integration**: Sophisticated tmux pane layouts that enable multi-agent collaboration (in previous version)
-- **Error Handling**: Comprehensive error handling with proper cleanup mechanisms
-
-## Updating Documentation
-
-When making major changes to the codebase, please remember to update the corresponding CLAUDE.md files:
-
-1. If you modify any Rust modules in `src-tauri/`, update `src-tauri/CLAUDE.md`
-2. If you modify React components in `src/`, update `src/CLAUDE.md`
-3. After updating documentation, verify that the changes are consistent with the actual code implementation
-
-This ensures that the documentation stays current with the codebase.
+- **Modular Architecture**: Keep responsibilities separated. Core logic resides in `src-tauri/`, UI in `src/`.
+- **Hierarchy Principle**: Each `CLAUDE.md` should only document its level; refer to subdirectory `CLAUDE.md` files for implementation details.
+- **Safety First**: All hardware interactions (especially GPU) must include safety checks, locking, and graceful degradation.
+- **Process Lifecycle Management**: Always monitor, restart on failure, and cleanly terminate processes.
+- **Error Handling**: Use structured error types and ensure cleanup on panic or exit.
+- **Documentation Sync**: Any major change to code must be reflected in the corresponding `CLAUDE.md` in the affected subdirectory.
 
 ## Project Structure
 
-For detailed documentation on the backend components, please refer to the CLAUDE.md files in subdirectories:
+- **`src/`**: Frontend React components and UI logic.
+  → See `src/CLAUDE.md` for component details, state management, and UI patterns.
 
-- **src/** - Contains the frontend application code for the user interface
-  - Frontend components and UI logic
-  - See `src/CLAUDE.md` for detailed documentation
+- **`src-tauri/`**: Backend Rust logic including GPU management, process control, Tauri integration, and orchestration.
+  → See `src-tauri/CLAUDE.md` for architecture, system interactions, and safety protocols.
 
-- **src-tauri/** - Contains the main Rust backend implementation including hardware management, process control, and Tauri integration
-  - See `src-tauri/CLAUDE.md` for detailed documentation
+- **`gen/`**: Generated code and build artifacts (frontend).
+  → See `gen/CLAUDE.md` for details on generated content.
 
-This is a sophisticated system designed to create a safe, controlled environment for AI agent development and testing with proper resource management, process lifecycle control, and terminal-based collaboration between multiple agent types.
+- **`public/`**: Static assets served directly by the application.
+
+> ✅ **Note**: This file contains only high-level guidance. For implementation specifics, refer to the subdirectory-specific `CLAUDE.md` files.
+
