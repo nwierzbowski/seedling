@@ -1,8 +1,12 @@
 //! Main application module for the seedling AI development environment.
 
-use std::{env, sync::Arc};
+use std::{env, rc::Rc, sync::Arc};
 
-use hyperon::metta::{runner::Metta, text::SExprParser};
+use hyperon::{
+    metta::{runner::Metta, text::SExprParser},
+    space::grounding::GroundingSpace,
+};
+use hyperon_atom::Atom;
 use tauri::Manager;
 use tokio::sync::Mutex;
 
@@ -93,13 +97,6 @@ pub fn run() {
             let adme = app.state::<Adme>().inner().clone();
             // let terminal = app.state::<TerminalState>().inner().clone();
 
-            let metta = Metta::new(None);
-
-            let core_logic = include_str!("../core_logic.metta");
-
-            metta.run(SExprParser::new(core_logic)).expect("Failed to run core logic");
-
-
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = state.init().await {
                     eprintln!("❌ Application initialization failed: {}", e);
@@ -113,8 +110,10 @@ pub fn run() {
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::Destroyed = event {
                 let app_state = window.state::<ManagedState>().inner().clone();
+                let adme = window.state::<Adme>().inner().clone();
 
                 tauri::async_runtime::block_on(async move {
+                    adme.shutdown().await;
                     let mut manager = app_state.process_manager.lock().await;
                     if let Err(e) = manager.stop_all().await {
                         eprintln!("❌ Failed to stop processes during shutdown: {}", e);

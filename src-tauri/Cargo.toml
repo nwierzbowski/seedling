@@ -10,6 +10,7 @@ path = "main.rs"
 
 [dependencies]
 hyperon = { path = "/home/nwier/Documents/git/hyperon-experimental/lib", default-features = false, features = ["pkg_mgmt"] }
+hyperon-atom = { path = "/home/nwier/Documents/git/hyperon-experimental/hyperon-atom" }
 
 # Error handling
 anyhow = "1.0"
@@ -48,6 +49,7 @@ log = "0.4"
 pretty_env_logger = "0.5"
 thiserror = "2.0.18"
 rig-fastembed = "0.2.22"
+crossbeam = "0.8"
 
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }

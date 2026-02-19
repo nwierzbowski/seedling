@@ -24,8 +24,11 @@ pub async fn start(agent: Adme) {
                     return Ok(());
                 }
 
-                let mut reply = agent.prompt(&input).await;
-                reply = filter_think_tag(&reply);
+                let result = agent.prompt(&input).await;
+                let reply = match result {
+                    Ok(res) => filter_think_tag(&res),
+                    Err(_) => String::from("Adme is currently unavailable. Please try again later."),
+                };
                 bot.send_message(msg.chat.id, &reply).await?;
 
                 Ok(())

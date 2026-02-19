@@ -3,7 +3,7 @@
 use portable_pty::{CommandBuilder, MasterPty, PtySize, native_pty_system};
 
 use std::sync::Arc;
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, State, http::response};
 
 use crate::{
     adme::{self, Adme},
@@ -102,6 +102,11 @@ pub async fn write_to_buffer(
     app.emit("pty-data", "\r\n").map_err(|e| e.to_string())?;
 
     let response = agent.prompt(&input).await;
+
+    let response = match response {
+        Ok(res) => res,
+        Err(e) => String::from(format!("{}", e)),
+    };
 
     // Convert Unix newlines to terminal newlines
     let terminal_response = response.replace("\n", "\r\n");

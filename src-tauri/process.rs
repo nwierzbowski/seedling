@@ -77,7 +77,7 @@ impl ProcessManager {
             .arg("serve")
             .env("OLLAMA_KV_CACHE_TYPE", "q4_0")
             .env("OLLAMA_FLASH_ATTENTION", "1")
-            .env("OLLAMA_CONTEXT_LENGTH", "24576")
+            .env("OLLAMA_CONTEXT_LENGTH", "4096")
             .kill_on_drop(true)
             .spawn()
             .map_err(|e| format!("Failed to start ollama: {}", e))?;
